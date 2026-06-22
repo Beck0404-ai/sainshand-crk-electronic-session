@@ -1,8 +1,0 @@
-{
-  "name": "Remix: Sainshand CRK Electronic Session",
-  "description": "Sainshand Soum Citizens\u0027 Representative Khural Electronic Session Unified System for managing attendance, agendas, speakers queue, timers, and real-time voting.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
