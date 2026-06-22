@@ -372,9 +372,6 @@ export default function App() {
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 max-w-2xl mx-auto">
                 Цахим хуралдааны нэгдсэн систем
               </h1>
-              <p className="text-[11px] text-slate-400 max-w-lg mx-auto leading-relaxed">
-                Ирц бүртгэл, санал хураалт, үг хэлэлтийн дарааллыг бодит хугацаанд удирдах, архивлах цахим зохицуулалтын систем
-              </p>
             </div>
           </div>
 
@@ -584,15 +581,6 @@ export default function App() {
                   </button>
                 </form>
 
-                {/* Test accounts hints bar */}
-                <div className="bg-slate-50 border-t border-slate-100 px-6 py-3.5 text-[10px] text-slate-500 leading-relaxed space-y-1">
-                  <div className="font-semibold text-slate-600">💡 Симуляцийн нэвтрэх эрхүүд:</div>
-                  {loginRoleTab === 'delegate' ? (
-                    <div>Төлөөлөгчид: <span className="font-mono bg-white border px-1 py-0.5 rounded text-blue-600 font-semibold text-[9px]">Нэрээ сонгоод</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">123</span></div>
-                  ) : (
-                    <div>Администратор: Нэвтрэх нэр: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span></div>
-                  )}
-                </div>
               </>
             )}
           </div>
