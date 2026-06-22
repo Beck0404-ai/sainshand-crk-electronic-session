@@ -738,25 +738,33 @@ app.post('/api/system/reset', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// Vite middleware and fallbacks setup
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server starting on http://localhost:${PORT}`);
+// Production static file serving (used by Vercel and local production)
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(_dirname, 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
-startServer();
+// Export for Vercel serverless
+export default app;
+
+// Start HTTP server only when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  async function startServer() {
+    if (process.env.NODE_ENV !== 'production') {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server starting on http://localhost:${PORT}`);
+    });
+  }
+
+  startServer();
+}
