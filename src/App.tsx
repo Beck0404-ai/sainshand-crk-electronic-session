@@ -365,7 +365,7 @@ export default function App() {
           
           {/* Main big display header */}
           <div className="text-center space-y-3">
-            <img src="/logo.png" alt="Сайншанд сумын лого" className="h-16 w-16 rounded-xl object-cover shadow-sm mx-auto" />
+            <img src="/logo.png" alt="Сайншанд сумын лого" className="h-20 w-20 rounded-full object-cover shadow-sm mx-auto" />
 
             <div className="space-y-1.5">
               <span className="text-[9px] text-blue-600 font-mono font-bold tracking-widest block uppercase">Дорноговь аймаг • Сайншанд сум</span>
