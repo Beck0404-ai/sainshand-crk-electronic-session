@@ -4,11 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, VotingArchiveItem } from '../types.js';
-import { 
-  Shield, Settings, Users, Clipboard, PlusCircle, Play, Pause, SkipForward, Clock,
-  FileCheck, Download, Trash2, Edit2, Key, Info, CheckCircle, XCircle, ChevronDown, ListPlus,
-  Monitor
+import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, VotingArchiveItem, PendingDelegate } from '../types.js';
+import {
+  Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
+  FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
+  Monitor, UserPlus, UserCheck, UserX
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -16,6 +16,7 @@ interface AdminDashboardProps {
   delegates: Delegate[];
   notifications: NotificationItem[];
   allDelegates: Delegate[];
+  pendingDelegates: PendingDelegate[];
   onToggleAttendance: (open: boolean) => Promise<void>;
   onStartVoting: (agendaItemId: string, title: string) => Promise<void>;
   onStopVoting: () => Promise<void>;
@@ -26,6 +27,9 @@ interface AdminDashboardProps {
   onClearQueue: () => Promise<void>;
   onResetPassword: (delegateId: string) => Promise<void>;
   onEditDelegate: (delegateId: string, data: Partial<Delegate>) => Promise<void>;
+  onApproveDelegate: (pendingId: string) => Promise<void>;
+  onRejectDelegate: (pendingId: string) => Promise<void>;
+  onAddDelegate: (data: { username: string; fullName: string; party: string; district: string; phone: string; email: string; bio?: string }) => Promise<void>;
   onCreateMeeting: (meetingData: { title: string; date: string; time: string; agenda: AgendaItem[] }) => Promise<void>;
   onAddMaterial: (agendaItemId: string, material: Partial<AgendaMaterial>) => Promise<void>;
   onSelectAgenda: (agendaItemId: string) => Promise<void>;
@@ -38,6 +42,7 @@ export default function AdminDashboard({
   delegates,
   notifications,
   allDelegates,
+  pendingDelegates,
   onToggleAttendance,
   onStartVoting,
   onStopVoting,
@@ -48,6 +53,9 @@ export default function AdminDashboard({
   onClearQueue,
   onResetPassword,
   onEditDelegate,
+  onApproveDelegate,
+  onRejectDelegate,
+  onAddDelegate,
   onCreateMeeting,
   onAddMaterial,
   onSelectAgenda,
@@ -89,6 +97,16 @@ export default function AdminDashboard({
   const [editDistrict, setEditDistrict] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
+
+  // Add delegate form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addFullName, setAddFullName] = useState('');
+  const [addUsername, setAddUsername] = useState('');
+  const [addParty, setAddParty] = useState<'МАН' | 'АН' | 'ХҮН' | 'Бяраа' | 'Бие даагч'>('МАН');
+  const [addDistrict, setAddDistrict] = useState('');
+  const [addPhone, setAddPhone] = useState('');
+  const [addEmail, setAddEmail] = useState('');
+  const [addBio, setAddBio] = useState('');
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -187,6 +205,34 @@ export default function AdminDashboard({
     if (confirm('Энэхүү төлөөлөгчийн нэвтрэх нууц үгийг сэргээж "123" болгох уу?')) {
       await onResetPassword(dId);
       showToast('Төлөөлөгчийн нууц үг амжилттай шинэчлэгдлээ.');
+    }
+  };
+
+  const handleApprove = async (pendingId: string, name: string) => {
+    await onApproveDelegate(pendingId);
+    showToast(`"${name}" зөвшөөрөгдөж системд нэмэгдлээ.`);
+  };
+
+  const handleReject = async (pendingId: string, name: string) => {
+    if (confirm(`"${name}"-ийн бүртгэлийн хүсэлтийг татгалзах уу?`)) {
+      await onRejectDelegate(pendingId);
+      showToast('Бүртгэлийн хүсэлт татгалзагдлаа.');
+    }
+  };
+
+  const handleAddDelegateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addFullName || !addUsername || !addDistrict || !addPhone || !addEmail) {
+      alert('Бүх талбарыг бөглөнө үү.');
+      return;
+    }
+    try {
+      await onAddDelegate({ username: addUsername, fullName: addFullName, party: addParty, district: addDistrict, phone: addPhone, email: addEmail, bio: addBio || undefined });
+      showToast(`"${addFullName}" амжилттай нэмэгдлээ. Анхны нууц үг: 123`);
+      setShowAddForm(false);
+      setAddFullName(''); setAddUsername(''); setAddDistrict(''); setAddPhone(''); setAddEmail(''); setAddBio('');
+    } catch {
+      alert('Алдаа гарлаа.');
     }
   };
 
@@ -418,11 +464,16 @@ export default function AdminDashboard({
           </button>
           <button
             onClick={() => setAdminTab('delegates')}
-            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
               adminTab === 'delegates' ? 'bg-blue-605 text-white bg-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
           >
             Төлөөлөгчид хянах
+            {pendingDelegates.filter(p => p.status === 'хүлээгдэж буй').length > 0 && (
+              <span className="bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5 leading-none">
+                {pendingDelegates.filter(p => p.status === 'хүлээгдэж буй').length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setAdminTab('meeting')}
@@ -779,16 +830,119 @@ export default function AdminDashboard({
 
       {/* TAB 2: ACTIVE DELEGATES MONITOR REGISTRY */}
       {adminTab === 'delegates' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 animate-fadeIn">
-          
+        <div className="space-y-4 animate-fadeIn">
+
+          {/* PENDING REGISTRATIONS */}
+          {pendingDelegates.filter(p => p.status === 'хүлээгдэж буй').length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <h4 className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-2">
+                <UserPlus size={14} className="text-amber-600" />
+                ХҮЛЭЭГДЭЖ БУЙ БҮРТГЭЛИЙН ХҮСЭЛТ ({pendingDelegates.filter(p => p.status === 'хүлээгдэж буй').length})
+              </h4>
+              <div className="space-y-2">
+                {pendingDelegates.filter(p => p.status === 'хүлээгдэж буй').map(p => (
+                  <div key={p.id} className="bg-white border border-amber-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-slate-900">{p.fullName}</span>
+                        <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold">{p.username}</span>
+                        <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded font-bold">{p.party}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500">{p.district} • {p.phone} • {p.email}</div>
+                      {p.bio && <div className="text-[10px] text-slate-400 italic truncate">{p.bio}</div>}
+                      <div className="text-[9px] text-amber-600 font-mono">Ирүүлсэн: {new Date(p.submittedAt).toLocaleString()}</div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleApprove(p.id, p.fullName)}
+                        className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        <UserCheck size={11} /> Зөвшөөрөх
+                      </button>
+                      <button
+                        onClick={() => handleReject(p.id, p.fullName)}
+                        className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        <UserX size={11} /> Татгалзах
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MAIN DELEGATES TABLE */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b pb-3.5">
             <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Users size={16} className="text-blue-600" /> ИТХ нийт төлөөлөгчдийн ирц бүртгэл ({allDelegates.length} хэрэглэгч)
             </h4>
-            <div className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-3 py-1.5 rounded-lg flex items-center font-mono font-bold">
-              Ирсэн Төлөөлөгчид: {meeting ? Object.keys(meeting.attendance).length : 0} / {allDelegates.length}
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] px-3 py-1.5 rounded-lg flex items-center font-mono font-bold">
+                Ирсэн: {meeting ? Object.keys(meeting.attendance).length : 0} / {allDelegates.length}
+              </div>
+              <button
+                onClick={() => setShowAddForm(v => !v)}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                <UserPlus size={12} /> Шинэ нэмэх
+              </button>
             </div>
           </div>
+
+          {/* ADD DELEGATE FORM */}
+          {showAddForm && (
+            <form onSubmit={handleAddDelegateSubmit} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 animate-fadeIn">
+              <h5 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <UserPlus size={12} className="text-blue-600" /> Шинэ төлөөлөгч шууд нэмэх (анхны нууц үг: 123)
+              </h5>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Овог нэр</label>
+                  <input type="text" value={addFullName} onChange={e => setAddFullName(e.target.value)} required placeholder="Б.Батбаяр" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Нэвтрэх нэр</label>
+                  <input type="text" value={addUsername} onChange={e => setAddUsername(e.target.value)} required placeholder="batbayar" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400 font-mono" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Нам</label>
+                  <select value={addParty} onChange={e => setAddParty(e.target.value as any)} aria-label="Нам сонгох" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none cursor-pointer">
+                    <option value="МАН">МАН</option>
+                    <option value="АН">АН</option>
+                    <option value="ХҮН">ХҮН</option>
+                    <option value="Бяраа">Бяраа</option>
+                    <option value="Бие даагч">Бие даагч</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Тойрог / Баг</label>
+                  <input type="text" value={addDistrict} onChange={e => setAddDistrict(e.target.value)} required placeholder="1-р баг" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Утас</label>
+                  <input type="text" value={addPhone} onChange={e => setAddPhone(e.target.value)} required placeholder="99xxxxxx" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400 font-mono" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">И-мэйл</label>
+                  <input type="email" value={addEmail} onChange={e => setAddEmail(e.target.value)} required placeholder="email@example.com" className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block font-bold text-slate-500 mb-1 text-[10px]">Товч танилцуулга (заавал биш)</label>
+                  <input type="text" value={addBio} onChange={e => setAddBio(e.target.value)} placeholder="ИТХ-ын Төлөөлөгч..." className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-blue-400" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition">
+                  Нэмэх
+                </button>
+                <button type="button" onClick={() => setShowAddForm(false)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition">
+                  Болих
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs min-w-[700px]">
@@ -842,6 +996,7 @@ export default function AdminDashboard({
                 })}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       )}

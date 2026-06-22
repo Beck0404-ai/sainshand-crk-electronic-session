@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { AppState, CRKMeeting, Delegate, NotificationItem, VotingArchiveItem } from '../src/types.js';
+import { AppState, CRKMeeting, Delegate, NotificationItem, VotingArchiveItem, PendingDelegate } from '../src/types.js';
 
 const app = express();
 app.use(express.json());
@@ -37,6 +37,12 @@ const seedDelegates: Delegate[] = [
 ];
 
 seedDelegates.forEach(d => { (d as any).password = '123'; });
+
+interface PendingDelegateInternal extends PendingDelegate {
+  password: string;
+}
+
+let pendingDelegates: PendingDelegateInternal[] = [];
 
 let serverMeeting: CRKMeeting = {
   id: 'meeting-14',
@@ -92,7 +98,8 @@ function getFullState(): AppState {
     version: appVersion,
     meeting: serverMeeting,
     delegates: seedDelegates.map(({ password, ...rest }: any) => rest),
-    notifications: serverNotifications
+    notifications: serverNotifications,
+    pendingDelegates: pendingDelegates.map(({ password, ...rest }) => rest)
   };
 }
 
@@ -338,6 +345,113 @@ app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
     return res.json({ success: true });
   }
   res.status(404).json({ error: 'Agenda not found' });
+});
+
+// Delegate self-registration
+app.post('/api/delegate/register', (req: Request, res: Response) => {
+  const { username, fullName, party, district, phone, email, bio, password } = req.body;
+  if (!username || !fullName || !party || !district || !phone || !email || !password)
+    return res.status(400).json({ error: 'Бүх талбарыг бөглөнө үү.' });
+  const uname = (username as string).trim().toLowerCase();
+  if (seedDelegates.some(x => x.username.toLowerCase() === uname))
+    return res.status(400).json({ error: 'Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна.' });
+  if (pendingDelegates.some(x => x.username.toLowerCase() === uname && x.status === 'хүлээгдэж буй'))
+    return res.status(400).json({ error: 'Энэ нэвтрэх нэрээр хүлээгдэж буй хүсэлт байна.' });
+  const validParties = ['МАН', 'АН', 'ХҮН', 'Бяраа', 'Бие даагч'];
+  if (!validParties.includes(party))
+    return res.status(400).json({ error: 'Намын сонголт буруу байна.' });
+  const newPending: PendingDelegateInternal = {
+    id: `pending-${Date.now()}`,
+    username: (username as string).trim(),
+    fullName: (fullName as string).trim(),
+    party,
+    district: (district as string).trim(),
+    phone: (phone as string).trim(),
+    email: (email as string).trim(),
+    bio: bio ? (bio as string).trim() : undefined,
+    password: password as string,
+    submittedAt: Date.now(),
+    status: 'хүлээгдэж буй'
+  };
+  pendingDelegates.push(newPending);
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Admin: approve pending delegate
+app.post('/api/admin/delegate/approve', (req: Request, res: Response) => {
+  const { pendingId } = req.body;
+  const pending = pendingDelegates.find(x => x.id === pendingId);
+  if (!pending) return res.status(404).json({ error: 'Хүлээгдэж буй бүртгэл олдсонгүй.' });
+  pending.status = 'зөвшөөрсөн';
+  const repNum = seedDelegates.length + 1;
+  const newDelegate: Delegate = {
+    id: `rep${String(repNum).padStart(2, '0')}-${Date.now()}`,
+    username: pending.username,
+    fullName: pending.fullName,
+    party: pending.party,
+    district: pending.district,
+    phone: pending.phone,
+    email: pending.email,
+    bio: pending.bio,
+    attendedMeetingsCount: 0,
+    votesCastCount: 0
+  };
+  (newDelegate as any).password = pending.password;
+  seedDelegates.push(newDelegate);
+  serverNotifications.push({
+    id: `notif-${Date.now()}`,
+    title: 'Шинэ төлөөлөгч бүртгэгдлээ',
+    message: `"${pending.fullName}" нэртэй төлөөлөгч зөвшөөрөгдөж системд нэмэгдлээ.`,
+    timestamp: Date.now(),
+    isRead: false
+  });
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Admin: reject pending delegate
+app.post('/api/admin/delegate/reject', (req: Request, res: Response) => {
+  const { pendingId } = req.body;
+  const pending = pendingDelegates.find(x => x.id === pendingId);
+  if (!pending) return res.status(404).json({ error: 'Хүлээгдэж буй бүртгэл олдсонгүй.' });
+  pending.status = 'татгалзсан';
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Admin: directly add a new delegate
+app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
+  const { username, fullName, party, district, phone, email, bio } = req.body;
+  if (!username || !fullName || !party || !district || !phone || !email)
+    return res.status(400).json({ error: 'Бүх талбарыг бөглөнө үү.' });
+  const uname = (username as string).trim().toLowerCase();
+  if (seedDelegates.some(x => x.username.toLowerCase() === uname))
+    return res.status(400).json({ error: 'Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна.' });
+  const repNum = seedDelegates.length + 1;
+  const newDelegate: Delegate = {
+    id: `rep${String(repNum).padStart(2, '0')}-${Date.now()}`,
+    username: (username as string).trim(),
+    fullName: (fullName as string).trim(),
+    party,
+    district: (district as string).trim(),
+    phone: (phone as string).trim(),
+    email: (email as string).trim(),
+    bio: bio ? (bio as string).trim() : undefined,
+    attendedMeetingsCount: 0,
+    votesCastCount: 0
+  };
+  (newDelegate as any).password = '123';
+  seedDelegates.push(newDelegate);
+  serverNotifications.push({
+    id: `notif-${Date.now()}`,
+    title: 'Шинэ төлөөлөгч нэмэгдлээ',
+    message: `"${newDelegate.fullName}" нэртэй шинэ төлөөлөгч системд нэмэгдлээ. Анхны нууц үг: 123`,
+    timestamp: Date.now(),
+    isRead: false
+  });
+  broadcastState();
+  res.json({ success: true });
 });
 
 app.post('/api/system/reset', (_req: Request, res: Response) => {

@@ -80,6 +80,19 @@ export interface NotificationItem {
   isRead: boolean;
 }
 
+export interface PendingDelegate {
+  id: string;
+  username: string;
+  fullName: string;
+  party: 'МАН' | 'АН' | 'ХҮН' | 'Бяраа' | 'Бие даагч';
+  district: string;
+  phone: string;
+  email: string;
+  bio?: string;
+  submittedAt: number;
+  status: 'хүлээгдэж буй' | 'зөвшөөрсөн' | 'татгалзсан';
+}
+
 export interface CRKMeeting {
   id: string;
   title: string;
@@ -101,4 +114,5 @@ export interface AppState {
   meeting: CRKMeeting | null;
   delegates: Delegate[];
   notifications: NotificationItem[];
+  pendingDelegates: PendingDelegate[];
 }

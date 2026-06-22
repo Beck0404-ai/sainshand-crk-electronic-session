@@ -15,7 +15,7 @@ import Header from './components/Header.js';
 import DelegateDashboard from './components/DelegateDashboard.js';
 import AdminDashboard from './components/AdminDashboard.js';
 import ProjectorView from './components/ProjectorView.js';
-import { Shield, Users, Monitor, ChevronRight, CornerDownRight, Landmark } from 'lucide-react';
+import { Shield, Users, Monitor, ChevronRight, Landmark, UserPlus } from 'lucide-react';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState | null>(null);
@@ -24,11 +24,23 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
 
   // Login Form States
-  const [loginRoleTab, setLoginRoleTab] = useState<'delegate' | 'admin'>('delegate');
+  const [loginRoleTab, setLoginRoleTab] = useState<'delegate' | 'admin' | 'register'>('delegate');
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Registration form states
+  const [regFullName, setRegFullName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regParty, setRegParty] = useState<'МАН' | 'АН' | 'ХҮН' | 'Бяраа' | 'Бие даагч'>('МАН');
+  const [regDistrict, setRegDistrict] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regBio, setRegBio] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regSuccess, setRegSuccess] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Load state and connect SSE
   useEffect(() => {
@@ -78,7 +90,7 @@ export default function App() {
     );
   }
 
-  const { delegates, meeting, notifications } = appState;
+  const { delegates, meeting, notifications, pendingDelegates } = appState;
 
   // Global action dispatcher helpers
   const handleRoleChange = (role: 'admin' | 'projector' | 'delegate', delegateId: string | null) => {
@@ -124,6 +136,38 @@ export default function App() {
       setLoginError('Сервэртэй холбогдох явцад алдаа гарлаа.');
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setIsRegistering(true);
+    try {
+      const res = await fetch('/api/delegate/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: regUsername.trim(),
+          fullName: regFullName.trim(),
+          party: regParty,
+          district: regDistrict.trim(),
+          phone: regPhone.trim(),
+          email: regEmail.trim(),
+          bio: regBio.trim(),
+          password: regPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRegSuccess(true);
+      } else {
+        setLoginError(data.error || 'Бүртгэлд алдаа гарлаа.');
+      }
+    } catch {
+      setLoginError('Сервэртэй холбогдох явцад алдаа гарлаа.');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -246,6 +290,30 @@ export default function App() {
     });
   };
 
+  const approveDelegate = async (pendingId: string) => {
+    await fetch('/api/admin/delegate/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pendingId })
+    });
+  };
+
+  const rejectDelegate = async (pendingId: string) => {
+    await fetch('/api/admin/delegate/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pendingId })
+    });
+  };
+
+  const addDelegateDirectly = async (data: { username: string; fullName: string; party: string; district: string; phone: string; email: string; bio?: string }) => {
+    await fetch('/api/admin/delegate/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  };
+
   const editDelegate = async (delegateId: string, data: Partial<Delegate>) => {
     await fetch('/api/admin/delegate/edit', {
       method: 'POST',
@@ -316,16 +384,9 @@ export default function App() {
             <div className="flex border-b border-slate-200 bg-slate-50">
               <button
                 type="button"
-                onClick={() => {
-                  setLoginRoleTab('delegate');
-                  setUsernameInput('');
-                  setPasswordInput('');
-                  setLoginError(null);
-                }}
+                onClick={() => { setLoginRoleTab('delegate'); setUsernameInput(''); setPasswordInput(''); setLoginError(null); setRegSuccess(false); }}
                 className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r border-slate-200 transition ${
-                  loginRoleTab === 'delegate'
-                    ? 'bg-white text-blue-600 border-b-2 border-b-blue-600 font-black'
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'
+                  loginRoleTab === 'delegate' ? 'bg-white text-blue-600 border-b-2 border-b-blue-600 font-black' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'
                 }`}
               >
                 <Users size={14} />
@@ -333,118 +394,207 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setLoginRoleTab('admin');
-                  setUsernameInput('admin'); // prefill for convenience
-                  setPasswordInput('');
-                  setLoginError(null);
-                }}
-                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition ${
-                  loginRoleTab === 'admin'
-                    ? 'bg-white text-blue-600 border-b-2 border-b-blue-600 font-black'
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'
+                onClick={() => { setLoginRoleTab('admin'); setUsernameInput('admin'); setPasswordInput(''); setLoginError(null); setRegSuccess(false); }}
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-r border-slate-200 transition ${
+                  loginRoleTab === 'admin' ? 'bg-white text-blue-600 border-b-2 border-b-blue-600 font-black' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'
                 }`}
               >
                 <Shield size={14} />
                 Администратор
               </button>
+              <button
+                type="button"
+                onClick={() => { setLoginRoleTab('register'); setLoginError(null); setRegSuccess(false); }}
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition ${
+                  loginRoleTab === 'register' ? 'bg-white text-emerald-600 border-b-2 border-b-emerald-600 font-black' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'
+                }`}
+              >
+                <UserPlus size={14} />
+                Бүртгүүлэх
+              </button>
             </div>
 
-            {/* Login Form Body */}
-            <form onSubmit={handleLoginSubmit} className="p-6 space-y-4">
-              
-              {/* Show error if exists */}
-              {loginError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-lg p-3 text-[11px] font-medium leading-relaxed">
-                  ⚠️ {loginError}
-                </div>
-              )}
-
-              {loginRoleTab === 'delegate' ? (
-                <>
-                  {/* Delegate selector dropdown */}
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Төлөөлөгч сонгох</label>
-                    <select
-                      onChange={(e) => {
-                        const dId = e.target.value;
-                        const dObj = delegates.find(x => x.id === dId);
-                        if (dObj) {
-                          setUsernameInput(dObj.username);
-                        }
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-semibold text-xs rounded-lg px-3 py-2 cursor-pointer outline-none focus:border-blue-500"
-                      defaultValue=""
+            {/* Registration Form */}
+            {loginRoleTab === 'register' ? (
+              <div className="p-6">
+                {regSuccess ? (
+                  <div className="text-center py-6 space-y-3">
+                    <div className="text-3xl">✅</div>
+                    <p className="text-sm font-bold text-emerald-700">Бүртгэлийн хүсэлт амжилттай илгээгдлээ!</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Таны мэдээлэл администраторт хүргэгдлээ. Зөвшөөрөгдсөний дараа нэвтрэх боломжтой болно.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setLoginRoleTab('delegate'); setRegSuccess(false); setRegFullName(''); setRegUsername(''); setRegDistrict(''); setRegPhone(''); setRegEmail(''); setRegBio(''); setRegPassword(''); }}
+                      className="mt-2 text-xs text-blue-600 font-bold underline cursor-pointer"
                     >
-                      <option value="" disabled>-- Сонгох --</option>
-                      {delegates.map(d => (
-                        <option key={d.id} value={d.id}>{d.fullName} ({d.district.split(' ')[0]})</option>
-                      ))}
-                    </select>
+                      Нэвтрэх хэсэгт буцах
+                    </button>
                   </div>
+                ) : (
+                  <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                    {loginError && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-lg p-3 text-[11px] font-medium">
+                        ⚠️ {loginError}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Овог нэр</label>
+                        <input type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)}
+                          placeholder="Ж: Б.Батбаяр" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Нэвтрэх нэр</label>
+                        <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)}
+                          placeholder="batbayar" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Нууц үг</label>
+                        <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                          placeholder="Нууц үг" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500 font-mono tracking-widest" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Нам / Холбоо</label>
+                        <select value={regParty} onChange={e => setRegParty(e.target.value as any)} required
+                          aria-label="Нам / Холбоо сонгох"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500 cursor-pointer">
+                          <option value="МАН">МАН</option>
+                          <option value="АН">АН</option>
+                          <option value="ХҮН">ХҮН</option>
+                          <option value="Бяраа">Бяраа</option>
+                          <option value="Бие даагч">Бие даагч</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Тойрог / Баг</label>
+                        <input type="text" value={regDistrict} onChange={e => setRegDistrict(e.target.value)}
+                          placeholder="Ж: 1-р баг" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Утасны дугаар</label>
+                        <input type="text" value={regPhone} onChange={e => setRegPhone(e.target.value)}
+                          placeholder="99xxxxxx" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">И-мэйл</label>
+                        <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
+                          placeholder="email@example.com" required
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Товч танилцуулга (заавал биш)</label>
+                        <textarea value={regBio} onChange={e => setRegBio(e.target.value)} rows={2}
+                          placeholder="Та өөрийгөө товчхон танилцуулна уу..."
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500 resize-none" />
+                      </div>
+                    </div>
+                    <button type="submit" disabled={isRegistering}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer select-none transition disabled:opacity-50">
+                      {isRegistering ? 'Илгээж байна...' : 'Бүртгэлийн хүсэлт илгээх'}
+                      {!isRegistering && <ChevronRight size={14} />}
+                    </button>
+                    <p className="text-[10px] text-slate-400 text-center">
+                      Хүсэлтийг администратор хянаж зөвшөөрнө.
+                    </p>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Login Form Body */}
+                <form onSubmit={handleLoginSubmit} className="p-6 space-y-4">
+                  {loginError && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-lg p-3 text-[11px] font-medium leading-relaxed">
+                      ⚠️ {loginError}
+                    </div>
+                  )}
 
-                  {/* Read-only/typed Username Display */}
+                  {loginRoleTab === 'delegate' ? (
+                    <>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Төлөөлөгч сонгох</label>
+                        <select
+                          aria-label="Төлөөлөгч сонгох"
+                          onChange={(e) => {
+                            const dId = e.target.value;
+                            const dObj = delegates.find(x => x.id === dId);
+                            if (dObj) setUsernameInput(dObj.username);
+                          }}
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-semibold text-xs rounded-lg px-3 py-2 cursor-pointer outline-none focus:border-blue-500"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>-- Сонгох --</option>
+                          {delegates.map(d => (
+                            <option key={d.id} value={d.id}>{d.fullName} ({d.district.split(' ')[0]})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Нэвтрэх нэр</label>
+                        <input
+                          type="text"
+                          value={usernameInput}
+                          onChange={(e) => setUsernameInput(e.target.value)}
+                          placeholder="Нэвтрэх нэр эсвэл дээрээс сонгоно уу"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                          required
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Админы Нэвтрэх нэр</label>
+                      <input
+                        type="text"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                        placeholder="Жишээ: admin"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Нэвтрэх нэр</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Нууц үг</label>
                     <input
-                      type="text"
-                      value={usernameInput}
-                      onChange={(e) => setUsernameInput(e.target.value)}
-                      placeholder="Нэвтрэх нэр эсвэл дээрээс сонгоно уу"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Пассворд оруулна уу"
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500 tracking-widest font-mono"
                       required
                     />
                   </div>
-                </>
-              ) : (
-                /* Admin Input */
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Админы Нэвтрэх нэр</label>
-                  <input
-                    type="text"
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="Жишээ: admin"
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500"
-                    required
-                  />
+
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer select-none transition disabled:opacity-50"
+                  >
+                    {isLoggingIn ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
+                    {!isLoggingIn && <ChevronRight size={14} />}
+                  </button>
+                </form>
+
+                {/* Test accounts hints bar */}
+                <div className="bg-slate-50 border-t border-slate-100 px-6 py-3.5 text-[10px] text-slate-500 leading-relaxed space-y-1">
+                  <div className="font-semibold text-slate-600">💡 Симуляцийн нэвтрэх эрхүүд:</div>
+                  {loginRoleTab === 'delegate' ? (
+                    <div>Төлөөлөгчид: <span className="font-mono bg-white border px-1 py-0.5 rounded text-blue-600 font-semibold text-[9px]">Нэрээ сонгоод</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">123</span></div>
+                  ) : (
+                    <div>Администратор: Нэвтрэх нэр: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span></div>
+                  )}
                 </div>
-              )}
-
-              {/* Password Input (Shared) */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Нууц үг</label>
-                <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="Пассворд оруулна уу"
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500 tracking-widest font-mono"
-                  required
-                />
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoggingIn}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer select-none transition disabled:opacity-50"
-              >
-                {isLoggingIn ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
-                {!isLoggingIn && <ChevronRight size={14} />}
-              </button>
-
-            </form>
-
-            {/* Test accounts hints bar */}
-            <div className="bg-slate-50 border-t border-slate-100 px-6 py-3.5 text-[10px] text-slate-500 leading-relaxed space-y-1">
-              <div className="font-semibold text-slate-600">💡 Симуляцийн нэвтрэх эрхүүд:</div>
-              {loginRoleTab === 'delegate' ? (
-                <div>Төлөөлөгчид: <span className="font-mono bg-white border px-1 py-0.5 rounded text-blue-600 font-semibold text-[9px]">Нэрээ сонгоод</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">123</span></div>
-              ) : (
-                <div>Администратор: Нэвтрэх нэр: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span>, нууц үг нь: <span className="font-mono bg-white border px-1 py-0.5 rounded text-slate-700 font-bold text-[9px]">admin</span></div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           <div className="bg-white border border-slate-200 p-3.5 rounded-lg text-center text-[10px] text-slate-400 leading-relaxed shadow-sm">
@@ -508,6 +658,7 @@ export default function App() {
             delegates={delegates.filter(d => meeting ? !!meeting.attendance[d.id] : false)}
             notifications={notifications}
             allDelegates={delegates}
+            pendingDelegates={pendingDelegates}
             onToggleAttendance={toggleAttendance}
             onStartVoting={startVoting}
             onStopVoting={stopVoting}
@@ -518,6 +669,9 @@ export default function App() {
             onClearQueue={clearQueue}
             onResetPassword={resetPassword}
             onEditDelegate={editDelegate}
+            onApproveDelegate={approveDelegate}
+            onRejectDelegate={rejectDelegate}
+            onAddDelegate={addDelegateDirectly}
             onCreateMeeting={createMeeting}
             onAddMaterial={addMaterial}
             onSelectAgenda={selectAgenda}
