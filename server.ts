@@ -19,146 +19,11 @@ const PORT = 3000;
 app.use(express.json());
 
 // Preseeded list of 29 delegates of Sainshand Soum
-const seedDelegates: Delegate[] = [
-  { id: 'rep01', username: 'batbayar', fullName: 'Б.Батбаяр', party: 'МАН', district: '1-р баг (Дундшанд)', phone: '99114567', email: 'batbayar@sainshand.gov.mn', bio: 'ИТХ-ын Төлөөлөгч, Хөдөө аж ахуйн мэргэжилтэн', attendedMeetingsCount: 12, votesCastCount: 45 },
-  { id: 'rep02', username: 'enkhbayar', fullName: 'С.Энхбаяр', party: 'МАН', district: '1-р баг (Дундшанд)', phone: '88112345', email: 'enkhbayar.s@sainshand.gov.mn', bio: 'ИТХ-ын Төлөөлөгч, Багш', attendedMeetingsCount: 11, votesCastCount: 42 },
-  { id: 'rep03', username: 'dulmaa', fullName: 'Л.Дулмаа', party: 'АН', district: '1-р баг (Дундшанд)', phone: '95123456', email: 'dulmaa.l@sainshand.gov.mn', bio: 'Эрүүл мэндийн салбарын зөвлөх', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep04', username: 'bold', fullName: 'Д.Болд', party: 'МАН', district: '2-р баг (Зүүн Колон)', phone: '99015678', email: 'bold.d@sainshand.gov.mn', bio: 'ИТХ-ын төлөөлөгч, Инженер', attendedMeetingsCount: 13, votesCastCount: 47 },
-  { id: 'rep05', username: 'ariunbold', fullName: 'Т.Ариунболд', party: 'МАН', district: '2-р баг (Зүүн Колон)', phone: '89115678', email: 'ariunbold@sainshand.gov.mn', bio: 'Хувийн хэвшлийн төлөөлөл', attendedMeetingsCount: 10, votesCastCount: 39 },
-  { id: 'rep06', username: 'chimge', fullName: 'Х.Чимэг', party: 'АН', district: '2-р баг (Зүүн Колон)', phone: '91114578', email: 'chimgee.kh@sainshand.gov.mn', bio: 'Жижиг дунд үйлдвэрлэлийг дэмжих холбооны гишүүн', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep07', username: 'mungun', fullName: 'Г.Мөнгөнсүх', party: 'МАН', district: '3-р баг (Мааньт)', phone: '99056633', email: 'mungunsukh@sainshand.gov.mn', bio: 'ИТХ-ын Тэргүүлэгч гишүүн', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep08', username: 'bayarkhuu', fullName: 'Т.Баярхүү', party: 'МАН', district: '3-р баг (Мааньт)', phone: '88019922', email: 'bayarkhuu@sainshand.gov.mn', bio: 'Дэд бүтцийн хорооны дарга', attendedMeetingsCount: 12, votesCastCount: 43 },
-  { id: 'rep09', username: 'altantsetseg', fullName: 'Н.Алтанцэцэг', party: 'АН', district: '3-р баг (Мааньт)', phone: '95663322', email: 'altantsetseg@sainshand.gov.mn', bio: 'Орон нутгийн ТББ-ын тэргүүн', attendedMeetingsCount: 13, votesCastCount: 46 },
-  { id: 'rep10', username: 'sukhbat', fullName: 'С.Сүхбат', party: 'ХҮН', district: '3-р баг (Мааньт)', phone: '99887766', email: 'sukhbat@sainshand.gov.mn', bio: 'Эдийн засагч, нийгмийн зүтгэлтэн', attendedMeetingsCount: 9, votesCastCount: 35 },
-  { id: 'rep11', username: 'erdenebayar', fullName: 'П.Эрдэнэбаяр', party: 'МАН', district: '4-р баг (Хэрлэн)', phone: '99127788', email: 'erdenebayar@sainshand.gov.mn', bio: 'Хорооны дарга, Хуульч', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep12', username: 'otgonpurev', fullName: 'Ж.Отгонпүрэв', party: 'МАН', district: '4-р баг (Хэрлэн)', phone: '89123344', email: 'otgonpurev@sainshand.gov.mn', bio: 'Хүүхэд Гэр Билийн Хөгжлийн зөвлөх', attendedMeetingsCount: 11, votesCastCount: 40 },
-  { id: 'rep13', username: 'tuyatsetseg', fullName: 'Б.Туяацэцэг', party: 'АН', district: '4-р баг (Хэрлэн)', phone: '95126677', email: 'tuyatsetseg@sainshand.gov.mn', bio: 'Биеийн тамир спортын хорооны ажилтан', attendedMeetingsCount: 13, votesCastCount: 46 },
-  { id: 'rep14', username: 'tuvshinjargal', fullName: 'Г.Түвшинжаргал', party: 'АН', district: '4-р баг (Хэрлэн)', phone: '99441122', email: 'tuvshinjargal@sainshand.gov.mn', bio: 'Байгаль орчны ахлах байцаагч', attendedMeetingsCount: 12, votesCastCount: 44 },
-  { id: 'rep15', username: 'khurel', fullName: 'Д.Хүрэлбаатар', party: 'Бие даагч', district: '4-р баг (Хэрлэн)', phone: '88001155', email: 'khurelbaatar@sainshand.gov.mn', bio: 'Ахмад төлөөлөгч, Орон нутгийн түүхч', attendedMeetingsCount: 15, votesCastCount: 48 },
-  { id: 'rep16', username: 'byambatsogt', fullName: 'О.Бямбацогт', party: 'МАН', district: '5-р баг (Шандын)', phone: '99451278', email: 'byambatsogt@sainshand.gov.mn', bio: 'Орон нутгийн хөгжлийн бодлогын мэргэжилтэн', attendedMeetingsCount: 11, votesCastCount: 41 },
-  { id: 'rep17', username: 'gantulga', fullName: 'Ц.Гантулга', party: 'МАН', district: '5-р баг (Шандын)', phone: '88995511', email: 'gantulga.ts@sainshand.gov.mn', bio: 'ИТХ-ын төлөөлөгч, Бизнес эрхлэгч', attendedMeetingsCount: 13, votesCastCount: 44 },
-  { id: 'rep18', username: 'amarsanaa', fullName: 'Т.Амарсанаа', party: 'АН', district: '5-р баг (Шандын)', phone: '95147852', email: 'amarsanaa.t@sainshand.gov.mn', bio: 'Инженерийн байгууламжийн мэргэжилтэн', attendedMeetingsCount: 10, votesCastCount: 38 },
-  { id: 'rep19', username: 'munkhtsetseg', fullName: 'Д.Мөнхцэцэг', party: 'МАН', district: '5-р баг (Шандын)', phone: '99110055', email: 'munkhtsetseg@sainshand.gov.mn', bio: 'Эрүүл уур амьсгал орон нутгийн ТББ гишүүн', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep20', username: 'enkhbat', fullName: 'Ж.Энхбат', party: 'МАН', district: '6-р баг (Өвөр)', phone: '94123654', email: 'enkhbat.j@sainshand.gov.mn', bio: 'Нийгмийн ажилтан', attendedMeetingsCount: 13, votesCastCount: 45 },
-  { id: 'rep21', username: 'sodnam', fullName: 'Р.Содномцэрэн', party: 'МАН', district: '6-р баг (Өвөр)', phone: '88663322', email: 'sodnamts@sainshand.gov.mn', bio: 'Залуучуудын хөгжлийн зөвлөлийн дарга', attendedMeetingsCount: 12, votesCastCount: 43 },
-  { id: 'rep22', username: 'purevjav', fullName: 'Б.Пүрэвжав', party: 'АН', district: '6-р баг (Өвөр)', phone: '99004455', email: 'purevjav.b@sainshand.gov.mn', bio: 'ИТХ-ын Төлөөлөгч, Жижиг дунд үйлчилгээ хариуцагч', attendedMeetingsCount: 14, votesCastCount: 47 },
-  { id: 'rep23', username: 'tsend', fullName: 'О.Цэнд-Аюуш', party: 'ХҮН', district: '6-р баг (Өвөр)', phone: '89114455', email: 'tsendayush@sainshand.gov.mn', bio: 'Мэдээллийн технологийн салбар зөвлөх', attendedMeetingsCount: 12, votesCastCount: 42 },
-  { id: 'rep24', username: 'ganbold', fullName: 'С.Ганболд', party: 'МАН', district: '1-р баг (Дундшанд)', phone: '99221199', email: 'ganbold.s@sainshand.gov.mn', bio: 'Боловсролын салбарын удирдах ажилтан', attendedMeetingsCount: 11, votesCastCount: 40 },
-  { id: 'rep25', username: 'oyunchimeg', fullName: 'Ж.Оюунчимэг', party: 'МАН', district: '2-р баг (Зүүн Колон)', phone: '99882244', email: 'oyunchimeg@sainshand.gov.mn', bio: 'Эмч, эрүүл мэндийн байцаагч', attendedMeetingsCount: 14, votesCastCount: 48 },
-  { id: 'rep26', username: 'badam', fullName: 'П.Бадамханд', party: 'АН', district: '3-р баг (Мааньт)', phone: '99446688', email: 'badamkhand@sainshand.gov.mn', bio: 'Дорноговь сонины сэтгүүлч', attendedMeetingsCount: 13, votesCastCount: 46 },
-  { id: 'rep27', username: 'tsogt', fullName: 'Б.Цогтсайхан', party: 'МАН', district: '4-р баг (Хэрлэн)', phone: '88110022', email: 'tsogtsaikhan@sainshand.gov.mn', bio: 'ИТХ-ын хорооны ажилтан', attendedMeetingsCount: 13, votesCastCount: 45 },
-  { id: 'rep28', username: 'uyanga', fullName: 'Л.Уянга', party: 'МАН', district: '5-р баг (Шандын)', phone: '95123399', email: 'uyanga.l@sainshand.gov.mn', bio: 'Орон нутгийн бизнесийн зөвлөх', attendedMeetingsCount: 14, votesCastCount: 47 },
-  { id: 'rep29', username: 'narangerel', fullName: 'Т.Нарангэрэл', party: 'МАН', district: '6-р баг (Өвөр)', phone: '89124433', email: 'narangerel@sainshand.gov.mn', bio: 'Нийтийн тээвэр хариуцсан мэргэжилтэн', attendedMeetingsCount: 12, votesCastCount: 44 }
-];
+const seedDelegates: any[] = [];
 
-// Set default passwords for all seed delegates
-seedDelegates.forEach(d => {
-  d.password = '123';
-});
+let serverMeeting: CRKMeeting | null = null;
 
-// Initial State Blueprint
-let serverMeeting: CRKMeeting = {
-  id: 'meeting-14',
-  title: 'Сайншанд сумын ИТХ-ын Ээлжит XIV Хуралдаан',
-  date: '2026-06-02',
-  time: '09:00',
-  status: 'идэвхтэй',
-  agenda: [
-    {
-      id: 'agenda-01',
-      title: '1. Сайншанд сумын 2026 оны Төсвийн тодотгол, хөгжлийн төлөвлөгөөг хэлэлцэн батлах тухай',
-      order: 1,
-      materials: [
-        {
-          id: 'mat-01',
-          title: 'Сайншанд сумын 2026 Төсвийн Тодотгол Хөгжлийн төлөвлөгөө.pdf',
-          fileType: 'pdf',
-          fileSize: '4.2 MB',
-          contentSummary: 'Сайншанд сумын ИТХ-ын Ээлжит 14-р хуралдаанаар хэлэлцэх төсвийн тодотголд сумын хэмжээнд хийгдэх тохижилт, гэрэлтүүлэг, болон дэд бүтцийн зардлуудыг тодотгосон болно. Нийт орлого 10.5 тэрбум төгрөг, нийт зарлага 11.2 тэрбум төгрөг гэж тусгасан ба сургууль, цэцэрлэгийн дулаалга, Сайншанд баазуудын ундны усны шугамын өргөтгөлийг шийдвэрлэхэд чиглэсэн хөрөнгө оруулалтын хуваарь багтсан.'
-        },
-        {
-          id: 'mat-02',
-          title: 'Төсвийн Тодотгол_Судалгаа хүснэгт.xlsx',
-          fileType: 'xlsx',
-          fileSize: '1.8 MB',
-          contentSummary: 'Баг тус бүрээр хөрөнгө оруулалтын зардлыг нарийвчлан харуулсан Excel файл. 1-р баг (Дундшанд) - 1.2 тэрбум ₮, 3-р баг (Мааньт) - 2.5 тэрбум ₮, 5-р баг (Шандын) - 900 сая ₮, 6-р баг (Өвөр) - 1.4 тэрбум ₮ төсөвлөсөн нарийвчилсан зардлын дүнг шинжилсэн судалгаа агуулсан.'
-        }
-      ]
-    },
-    {
-      id: 'agenda-02',
-      title: '2. Сумын Хэмжээнд Гэр Хорооллын Дахин Төлөвлөлт, Газар Зохион Байгуулалтын Төлөвлөгөө хуулах',
-      order: 2,
-      materials: [
-        {
-          id: 'mat-03',
-          title: 'Газар Зохион Байгуулалтын Ерөнхий Төлөвлөгөө.docx',
-          fileType: 'docx',
-          fileSize: '2.9 MB',
-          contentSummary: 'Сайншанд сумын өсөн нэмэгдэж буй хүн амд зориулан 4, 5, 6-р багийн хэсэгчилсэн газар дахин төлөвлөлтийн зураглал, авто зогсоолыг өргөтгөх, инженерийн шугам сүлжээ татах шаардлагыг тусгасан баримт бичиг. Төлөөлөгчдөд газар олголтын сонгон шалгаруулалтын ил тод байдлыг нэмэгдүүлэх заалтыг танилцуулж байна.'
-        }
-      ]
-    },
-    {
-      id: 'agenda-03',
-      title: '3. Орон нутгийн байгаль орчныг хамгаалах, аялал жуулчлалын бүсийн тохижилт, зэрлэг ан амьтдыг хамгаалах журам',
-      order: 3,
-      materials: [
-        {
-          id: 'mat-04',
-          title: 'Байгаль орчны төлөвлөгөө 2026.pdf',
-          fileType: 'pdf',
-          fileSize: '3.5 MB',
-          contentSummary: 'Хамарын хийд орчмын аялал жуулчлалын бүсийн Цэвэр орчны журам болон Монгол улсын улаан номонд орсон хулан, хар сүүлт зэргийг хамгаалах, ундны усны эх үүсвэрт шинээр нөөц газрууд үүсгэх ажлыг сумын төсвөөс санхүүжүүлэх тухай журам.'
-        }
-      ]
-    }
-  ],
-  activeAgendaItemId: 'agenda-01',
-  attendanceOpen: true,
-  attendance: {
-    'rep01': Date.now() - 3600000,
-    'rep02': Date.now() - 3500000,
-    'rep04': Date.now() - 3000000,
-    'rep07': Date.now() - 2500000,
-    'rep08': Date.now() - 2400000,
-    'rep11': Date.now() - 2300000,
-    'rep12': Date.now() - 2200000,
-    'rep13': Date.now() - 2000000,
-    'rep15': Date.now() - 1900000,
-    'rep16': Date.now() - 1800000,
-    'rep17': Date.now() - 1700000,
-    'rep19': Date.now() - 1600000,
-    'rep20': Date.now() - 1500000,
-    'rep22': Date.now() - 1400000,
-    'rep25': Date.now() - 1200000,
-    'rep28': Date.now() - 1100000
-  },
-  speakerQueue: [
-    { delegateId: 'rep03', requestTime: Date.now() - 60000, turn: 1 },
-    { delegateId: 'rep09', requestTime: Date.now() - 50000, turn: 1 },
-    { delegateId: 'rep15', requestTime: Date.now() - 10000, turn: 2 }
-  ],
-  currentSpeaker: {
-    delegateId: 'rep01',
-    remainingSeconds: 124,
-    duration: 180,
-    isPaused: false,
-    turn: 1
-  },
-  voting: {
-    active: false,
-    agendaItemId: 'agenda-01',
-    title: 'Санал хураалт',
-    votes: {}
-  },
-  votingArchive: []
-};
-
-let serverNotifications: NotificationItem[] = [
-  { id: 'notif-1', title: 'Хуралдааны тов зарлагдлаа', message: 'Сайншанд сумын ИТХ-ын Ээлжит XIV хуралдаан 2026 оны 06-р сарын 02-ны 09:00 цагт хуралдахаар товлогдлоо.', timestamp: Date.now() - 7200000, isRead: false },
-  { id: 'notif-2', title: 'Шинэ материал орлоо', message: 'Төгсвийн тодотгол болон Газар зохион байгуулах төлөвлөгөөний файлуудыг танилцуулга хэсэгт оруулсан байна. Төлөөлөгчид танилцана уу.', timestamp: Date.now() - 3600000, isRead: false }
-];
+let serverNotifications: NotificationItem[] = [];
 
 interface PendingDelegateInternal extends PendingDelegate {
   password: string;
@@ -202,6 +67,7 @@ function broadcastState() {
 
 // Archive the current voting and close it
 function archiveAndCloseVoting() {
+  if (!serverMeeting) return;
   const v = serverMeeting.voting;
   if (Object.keys(v.votes).length > 0) {
     const archiveItem: VotingArchiveItem = {
@@ -224,6 +90,7 @@ function archiveAndCloseVoting() {
 
 // Server side tick interval for current speaker's time and voting countdown
 setInterval(() => {
+  if (!serverMeeting) return;
   let stateChanged = false;
 
   // Speaker timer decrement
@@ -334,6 +201,7 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
 
 // Update an agenda item or add materials (Admin Tool)
 app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { agendaItemId, material } = req.body;
   const agendaItem = serverMeeting.agenda.find(ag => ag.id === agendaItemId);
   if (agendaItem) {
@@ -363,6 +231,7 @@ app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
 
 // Toggle Attendance open / closed (Admin Tool)
 app.post('/api/admin/attendance/toggle', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { open } = req.body;
   serverMeeting.attendanceOpen = open;
   broadcastState();
@@ -371,6 +240,7 @@ app.post('/api/admin/attendance/toggle', (req: Request, res: Response) => {
 
 // Open/Close meeting active status (Admin Tool)
 app.post('/api/admin/meeting/status', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { status } = req.body; // 'товлогдсон' | 'идэвхтэй' | 'дууссан'
   serverMeeting.status = status;
   if (status === 'дууссан') {
@@ -385,6 +255,7 @@ app.post('/api/admin/meeting/status', (req: Request, res: Response) => {
 
 // Set Active Agenda under discussion (Admin Tool)
 app.post('/api/admin/agenda/select', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { agendaItemId } = req.body;
   serverMeeting.activeAgendaItemId = agendaItemId;
   broadcastState();
@@ -393,6 +264,7 @@ app.post('/api/admin/agenda/select', (req: Request, res: Response) => {
 
 // Start a vote (Admin Tool)
 app.post('/api/admin/voting/start', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { agendaItemId, title } = req.body;
   serverMeeting.voting = {
     active: true,
@@ -408,6 +280,7 @@ app.post('/api/admin/voting/start', (req: Request, res: Response) => {
 
 // Stop current vote (Admin Tool)
 app.post('/api/admin/voting/stop', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   archiveAndCloseVoting();
   broadcastState();
   res.json({ success: true });
@@ -415,6 +288,7 @@ app.post('/api/admin/voting/stop', (req: Request, res: Response) => {
 
 // Register Delegate Attendance (Delegate action)
 app.post('/api/attendance/register', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId } = req.body;
   if (!serverMeeting.attendanceOpen) {
     return res.status(400).json({ error: 'Ирц бүртгэл хаагдсан байна.' });
@@ -433,8 +307,9 @@ app.post('/api/attendance/register', (req: Request, res: Response) => {
 
 // Delegate joins Speaker Queue (Delegate action)
 app.post('/api/speaker-queue/join', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId } = req.body;
-  
+
   // Guard
   if (!delegateId || !seedDelegates.some(x => x.id === delegateId)) {
     return res.status(400).json({ error: 'Delegate not found' });
@@ -472,6 +347,7 @@ app.post('/api/speaker-queue/join', (req: Request, res: Response) => {
 
 // Delegate leaves Speaker Queue (Delegate action)
 app.post('/api/speaker-queue/leave', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId } = req.body;
   serverMeeting.speakerQueue = serverMeeting.speakerQueue.filter(x => x.delegateId !== delegateId);
   broadcastState();
@@ -480,8 +356,9 @@ app.post('/api/speaker-queue/leave', (req: Request, res: Response) => {
 
 // Delegate submits vote (Delegate action)
 app.post('/api/vote/submit', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId, choice } = req.body; // 'Зөвшөөрсөн' | 'Татгалзсан'
-  
+
   if (!serverMeeting.voting.active) {
     return res.status(400).json({ error: 'Идэвхтэй санал хураалт явагдаагүй байна.' });
   }
@@ -547,6 +424,7 @@ app.post('/api/login', (req: Request, res: Response) => {
 
 // Start timer for next speaker in queue (Admin Tool)
 app.post('/api/admin/speaker/next', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   if (serverMeeting.speakerQueue.length > 0) {
     const nextItem = serverMeeting.speakerQueue[0]; // First in queue
     serverMeeting.speakerQueue.shift(); // Remove from queue
@@ -570,9 +448,10 @@ app.post('/api/admin/speaker/next', (req: Request, res: Response) => {
 });
 
 app.post('/api/admin/speaker/select-direct', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId, turn } = req.body;
   const duration = turn === 1 ? 180 : 300;
-  
+
   serverMeeting.speakerQueue = serverMeeting.speakerQueue.filter(x => x.delegateId !== delegateId);
   serverMeeting.currentSpeaker = {
     delegateId,
@@ -587,8 +466,9 @@ app.post('/api/admin/speaker/select-direct', (req: Request, res: Response) => {
 
 // Play/Pause timer (Admin Tool)
 app.post('/api/admin/speaker/control', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { action } = req.body; // 'play' | 'pause' | 'add_time' | 'sub_time'
-  
+
   if (serverMeeting.currentSpeaker) {
     if (action === 'play') {
       serverMeeting.currentSpeaker.isPaused = false;
@@ -614,6 +494,7 @@ app.post('/api/admin/speaker/control', (req: Request, res: Response) => {
 
 // Skip/removes current speaker (Admin Tool)
 app.post('/api/admin/speaker/skip', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   serverMeeting.currentSpeaker = null;
   broadcastState();
   res.json({ success: true });
@@ -621,6 +502,7 @@ app.post('/api/admin/speaker/skip', (req: Request, res: Response) => {
 
 // Clear speaker queue (Admin Tool)
 app.post('/api/admin/speaker/clear', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   serverMeeting.speakerQueue = [];
   serverMeeting.currentSpeaker = null;
   broadcastState();
@@ -751,91 +633,13 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// Reset entire systems status back to start for simulation (All-in-one button)
+// Reset entire system back to clean empty state (Admin Tool)
 app.post('/api/system/reset', (req: Request, res: Response) => {
-  serverMeeting = {
-    id: `meeting-14-${Date.now()}`,
-    title: 'Сайншанд сумын ИТХ-ын Ээлжит XIV Хуралдаан',
-    date: '2026-06-02',
-    time: '09:00',
-    status: 'идэвхтэй',
-    agenda: [
-      {
-        id: 'agenda-01',
-        title: '1. Сайншанд сумын 2026 оны Төсвийн тодотгол, хөгжлийн төлөвлөгөөг хэлэлцэн батлах тухай',
-        order: 1,
-        materials: [
-          {
-            id: 'mat-01',
-            title: 'Сайншанд сумын 2026 Төсвийн Тодотгол Хөгжлийн төлөвлөгөө.pdf',
-            fileType: 'pdf',
-            fileSize: '4.2 MB',
-            contentSummary: 'Сайншанд сумын ИТХ-ын Ээлжит 14-р хуралдаанаар хэлэлцэх төсвийн тодотголд сумын хэмжээнд хийгдэх тохижилт, гэрэлтүүлэг, болон дэд бүтцийн зардлуудыг тодотгосон болно. Нийт орлого 10.5 тэрбум төгрөг, нийт зарлага 11.2 тэрбум төгрөг гэж тусгасан ба сургууль, цэцэрлэгийн дулаалга, Сайншанд баазуудын ундны усны шугамын өргөтгөлийг шийдвэрлэхэд чиглэсэн хөрөнгө оруулалтын хуваарь багтсан.'
-          },
-          {
-            id: 'mat-02',
-            title: 'Төсвийн Тодотгол_Судалгаа хүснэгт.xlsx',
-            fileType: 'xlsx',
-            fileSize: '1.8 MB',
-            contentSummary: 'Баг тус бүрээр хөрөнгө оруулалтын зардлыг нарийвчлан харуулсан Excel файл. 1-р баг (Дундшанд) - 1.2 тэрбум ₮, 3-р баг (Мааньт) - 2.5 тэрбум ₮, 5-р баг (Шандын) - 900 сая ₮, 6-р баг (Өвөр) - 1.4 тэрбум ₮ төсөвлөсөн нарийвчилсан зардлын дүнг шинжилсэн судалгаа агуулсан.'
-          }
-        ]
-      },
-      {
-        id: 'agenda-02',
-        title: '2. Сумын Хэмжээнд Гэр Хорооллов Дахин Төлөвлөлт, Газар Зохион Байгуулалтын Төлөвлөгөө хуулах',
-        order: 2,
-        materials: [
-          {
-            id: 'mat-03',
-            title: 'Газар Зохион Байгуулалтын Ерөнхий Төлөвлөгөө.docx',
-            fileType: 'docx',
-            fileSize: '2.9 MB',
-            contentSummary: 'Сайншанд сумын өсөн нэмэгдэж буй хүн амд зориулан 4, 5, 6-р багийн хэсэгчилсэн газар дахин төлөвлөлтийн зураглал, авто зогсоолыг өргөтгөх, инженерийн шугам сүлжээ татах шаардлагыг тусгасан баримт бичиг. Төлөөлөгчдөд газар олголтын сонгон шалгаруулалтын ил тод байдлыг нэмэгдүүлэх заалтыг танилцуулж байна.'
-          }
-        ]
-      },
-      {
-        id: 'agenda-03',
-        title: '3. Орон нутгийн байгаль орчныг хамгаалах, аялал жуулчлалын бүсийн тохижилт, зэрлэг ан амьтдыг хамгаалах журам',
-        order: 3,
-        materials: [
-          {
-            id: 'mat-04',
-            title: 'Байгаль орчны төлөвлөгөө 2026.pdf',
-            fileType: 'pdf',
-            fileSize: '3.5 MB',
-            contentSummary: 'Хамарын хийд орчмын аялал жуулчлалын бүсийн Цэвэр орчны журам болон Монгол улсын улаан номонд орсон хулан, хар сүүлт зэргийг хамгаалах, ундны усны эх үүсвэрт шинээр нөөц газрууд үүсгэх ажлыг сумын төсвөөс санхүүжүүлэх тухай журам.'
-          }
-        ]
-      }
-    ],
-    activeAgendaItemId: 'agenda-01',
-    attendanceOpen: true,
-    attendance: {
-      'rep01': Date.now() - 3600000,
-      'rep02': Date.now() - 3500000,
-      'rep04': Date.now() - 3000000,
-      'rep07': Date.now() - 2500000,
-      'rep08': Date.now() - 2400000,
-      'rep11': Date.now() - 2300000,
-      'rep12': Date.now() - 2200000,
-      'rep13': Date.now() - 2000000,
-      'rep15': Date.now() - 1900000
-    },
-    speakerQueue: [
-      { delegateId: 'rep03', requestTime: Date.now() - 60000, turn: 1 },
-      { delegateId: 'rep09', requestTime: Date.now() - 50000, turn: 1 }
-    ],
-    currentSpeaker: null,
-    voting: {
-      active: false,
-      agendaItemId: 'agenda-01',
-      title: 'Санал хураалт',
-      votes: {}
-    },
-    votingArchive: []
-  };
+  serverMeeting = null;
+  seedDelegates.length = 0;
+  pendingDelegates.length = 0;
+  serverNotifications = [];
+  appVersion += 1;
   broadcastState();
   res.json({ success: true });
 });

@@ -516,24 +516,6 @@ export default function App() {
                   {loginRoleTab === 'delegate' ? (
                     <>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Төлөөлөгч сонгох</label>
-                        <select
-                          aria-label="Төлөөлөгч сонгох"
-                          onChange={(e) => {
-                            const dId = e.target.value;
-                            const dObj = delegates.find(x => x.id === dId);
-                            if (dObj) setUsernameInput(dObj.username);
-                          }}
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 font-semibold text-xs rounded-lg px-3 py-2 cursor-pointer outline-none focus:border-blue-500"
-                          defaultValue=""
-                        >
-                          <option value="" disabled>-- Сонгох --</option>
-                          {delegates.map(d => (
-                            <option key={d.id} value={d.id}>{d.fullName} ({d.district.split(' ')[0]})</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Нэвтрэх нэр</label>
                         <input
                           type="text"
