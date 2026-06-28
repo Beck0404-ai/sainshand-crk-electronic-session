@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
+import { dbLoad, dbSave } from './src/db.js';
 
 const isCjs = typeof __filename !== 'undefined' && typeof __dirname !== 'undefined';
 const _filename = isCjs ? __filename : (import.meta && import.meta.url ? fileURLToPath(import.meta.url) : '');
@@ -33,6 +35,33 @@ let pendingDelegates: PendingDelegateInternal[] = [];
 
 let appVersion = 1;
 
+async function loadStateFromDB() {
+  try {
+    const [dels, mtg, pend, notifs] = await Promise.all([
+      dbLoad<any[]>('delegates'),
+      dbLoad<CRKMeeting | null>('meeting'),
+      dbLoad<any[]>('pending_delegates'),
+      dbLoad<NotificationItem[]>('notifications'),
+    ]);
+    if (dels?.length) { seedDelegates.length = 0; seedDelegates.push(...dels); }
+    if (mtg !== null) serverMeeting = mtg;
+    if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
+    if (notifs?.length) serverNotifications = notifs;
+    console.log(`DB: ${seedDelegates.length} delegates, meeting: ${serverMeeting?.id ?? 'none'}`);
+  } catch (e) {
+    console.error('DB load error:', e);
+  }
+}
+
+async function saveStateToDB() {
+  await Promise.all([
+    dbSave('delegates', seedDelegates),
+    dbSave('meeting', serverMeeting),
+    dbSave('pending_delegates', pendingDelegates),
+    dbSave('notifications', serverNotifications),
+  ]);
+}
+
 // Server state accessor helper
 function getFullState(): AppState {
   return {
@@ -51,11 +80,12 @@ function getFullState(): AppState {
 let sseClients: Response[] = [];
 
 // Broadcast updated state to all connected clients
-function broadcastState() {
+// persist=false for timer ticks (every second), persist=true for real actions
+function broadcastState(persist = true) {
   appVersion += 1;
   const stateJson = JSON.stringify(getFullState());
   const dataString = `data: ${stateJson}\n\n`;
-  
+
   sseClients.forEach(client => {
     try {
       client.write(dataString);
@@ -63,6 +93,8 @@ function broadcastState() {
       // client connection likely dead
     }
   });
+
+  if (persist) saveStateToDB().catch(console.error);
 }
 
 // Archive the current voting and close it
@@ -92,19 +124,18 @@ function archiveAndCloseVoting() {
 setInterval(() => {
   if (!serverMeeting) return;
   let stateChanged = false;
+  let persist = false;
 
   // Speaker timer decrement
   if (serverMeeting.currentSpeaker && !serverMeeting.currentSpeaker.isPaused) {
     if (serverMeeting.currentSpeaker.remainingSeconds > 0) {
       serverMeeting.currentSpeaker.remainingSeconds -= 1;
       stateChanged = true;
-    } else {
-      // Time is up
-      if (!serverMeeting.currentSpeaker.timeUpTriggered) {
-        serverMeeting.currentSpeaker.timeUpTriggered = true;
-        serverMeeting.currentSpeaker.isPaused = true; // Auto-pause when time ticks to 0
-        stateChanged = true;
-      }
+    } else if (!serverMeeting.currentSpeaker.timeUpTriggered) {
+      serverMeeting.currentSpeaker.timeUpTriggered = true;
+      serverMeeting.currentSpeaker.isPaused = true;
+      stateChanged = true;
+      persist = true;
     }
   }
 
@@ -114,20 +145,17 @@ setInterval(() => {
       serverMeeting.voting.remainingSeconds = 60;
       serverMeeting.voting.duration = 60;
     }
-
     if (serverMeeting.voting.remainingSeconds > 0) {
       serverMeeting.voting.remainingSeconds -= 1;
       stateChanged = true;
     } else {
-      // Voting countdown reached 0: auto-close and archive
       archiveAndCloseVoting();
       stateChanged = true;
+      persist = true;
     }
   }
 
-  if (stateChanged) {
-    broadcastState();
-  }
+  if (stateChanged) broadcastState(persist);
 }, 1000);
 
 // SSE endpoint
@@ -659,6 +687,8 @@ export default app;
 // Start HTTP server only when running locally (not on Vercel)
 if (!process.env.VERCEL) {
   async function startServer() {
+    await loadStateFromDB();
+
     if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({
         server: { middlewareMode: true },

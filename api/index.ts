@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { AppState, CRKMeeting, Delegate, NotificationItem, VotingArchiveItem, PendingDelegate } from '../src/types.js';
+import { dbLoad, dbSave } from '../src/db.js';
 
 const app = express();
 app.use(express.json());
@@ -18,6 +19,39 @@ let serverNotifications: NotificationItem[] = [];
 
 let appVersion = 1;
 
+async function loadStateFromDB() {
+  try {
+    const [dels, mtg, pend, notifs] = await Promise.all([
+      dbLoad<any[]>('delegates'),
+      dbLoad<CRKMeeting | null>('meeting'),
+      dbLoad<any[]>('pending_delegates'),
+      dbLoad<NotificationItem[]>('notifications'),
+    ]);
+    if (dels?.length) { seedDelegates.length = 0; seedDelegates.push(...dels); }
+    if (mtg !== null) serverMeeting = mtg;
+    if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
+    if (notifs?.length) serverNotifications = notifs;
+  } catch (e) {
+    console.error('DB load error:', e);
+  }
+}
+
+async function saveStateToDB() {
+  await Promise.all([
+    dbSave('delegates', seedDelegates),
+    dbSave('meeting', serverMeeting),
+    dbSave('pending_delegates', pendingDelegates),
+    dbSave('notifications', serverNotifications),
+  ]);
+}
+
+// Ensure DB state is loaded once per cold start
+let _initPromise: Promise<void> | null = null;
+app.use((_req, _res, next) => {
+  if (!_initPromise) _initPromise = loadStateFromDB();
+  _initPromise.then(next).catch(next);
+});
+
 function getFullState(): AppState {
   return {
     version: appVersion,
@@ -30,12 +64,13 @@ function getFullState(): AppState {
 
 let sseClients: Response[] = [];
 
-function broadcastState() {
+function broadcastState(persist = true) {
   appVersion += 1;
   const dataString = `data: ${JSON.stringify(getFullState())}\n\n`;
   sseClients.forEach(client => {
     try { client.write(dataString); } catch {}
   });
+  if (persist) saveStateToDB().catch(console.error);
 }
 
 function archiveAndCloseVoting() {
@@ -62,6 +97,7 @@ function archiveAndCloseVoting() {
 setInterval(() => {
   if (!serverMeeting) return;
   let changed = false;
+  let persist = false;
   if (serverMeeting.currentSpeaker && !serverMeeting.currentSpeaker.isPaused) {
     if (serverMeeting.currentSpeaker.remainingSeconds > 0) {
       serverMeeting.currentSpeaker.remainingSeconds -= 1;
@@ -70,6 +106,7 @@ setInterval(() => {
       serverMeeting.currentSpeaker.timeUpTriggered = true;
       serverMeeting.currentSpeaker.isPaused = true;
       changed = true;
+      persist = true;
     }
   }
   if (serverMeeting.voting?.active) {
@@ -83,9 +120,10 @@ setInterval(() => {
     } else {
       archiveAndCloseVoting();
       changed = true;
+      persist = true;
     }
   }
-  if (changed) broadcastState();
+  if (changed) broadcastState(persist);
 }, 1000);
 
 app.get('/api/events', (req: Request, res: Response) => {
