@@ -567,9 +567,6 @@ export default function App() {
             )}
           </div>
 
-          <div className="bg-white border border-slate-200 p-3.5 rounded-lg text-center text-[10px] text-slate-400 leading-relaxed shadow-sm">
-            💡 <strong>Туршилтын горим:</strong> Бодит хугацааны синхрончлолыг шалгахын тулд энэхүү хаягаа давхар цонхонд нээж, нэгэнд нь <span className="font-medium text-slate-600">Төлөөлөгч</span>, нөгөөд нь <span className="font-medium text-slate-600">Админ</span> системээр орж зэрэгцүүлж ашиглаарай.
-          </div>
 
         </div>
 

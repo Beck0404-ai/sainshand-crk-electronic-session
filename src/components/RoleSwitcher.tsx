@@ -45,19 +45,21 @@ export default function RoleSwitcher({
   return (
     <div className="bg-white border-b border-slate-200 text-slate-700 text-xs shadow-sm z-50 transition-all">
       <div className="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 font-mono">
-          <span className="flex h-2 w-2 relative">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              connectionStatus === 'connected' ? 'bg-emerald-400' : connectionStatus === 'connecting' ? 'bg-amber-400' : 'bg-rose-400'
-            }`}></span>
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${
-              connectionStatus === 'connected' ? 'bg-emerald-500' : connectionStatus === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'
-            }`}></span>
-          </span>
-          <span className="text-slate-500 font-medium">
-            {connectionStatus === 'connected' ? 'Интеграци: Идэвхтэй харилцаа (SSE)' : connectionStatus === 'connecting' ? 'Холбогдож байна...' : 'Сүлжээ тасарсан'}
-          </span>
-        </div>
+        {currentRole === 'admin' && (
+          <div className="flex items-center gap-2 font-mono">
+            <span className="flex h-2 w-2 relative">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                connectionStatus === 'connected' ? 'bg-emerald-400' : connectionStatus === 'connecting' ? 'bg-amber-400' : 'bg-rose-400'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                connectionStatus === 'connected' ? 'bg-emerald-500' : connectionStatus === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'
+              }`}></span>
+            </span>
+            <span className="text-slate-500 font-medium">
+              {connectionStatus === 'connected' ? 'Интеграци: Идэвхтэй харилцаа (SSE)' : connectionStatus === 'connecting' ? 'Холбогдож байна...' : 'Сүлжээ тасарсан'}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 mr-2">
           {/* Active indicator */}
