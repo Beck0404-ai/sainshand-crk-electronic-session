@@ -604,15 +604,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans">
       
-      {/* Top Identity Switcher for frictionless testing */}
-      <RoleSwitcher
-        currentRole={currentRole}
-        currentDelegateId={currentDelegateId}
-        delegates={delegates}
-        onRoleChange={handleRoleChange}
-        onResetSystem={handleResetSystem}
-        connectionStatus={connectionStatus}
-      />
+      {/* Top Identity Switcher - admin only */}
+      {currentRole === 'admin' && (
+        <RoleSwitcher
+          currentRole={currentRole}
+          currentDelegateId={currentDelegateId}
+          delegates={delegates}
+          onRoleChange={handleRoleChange}
+          onResetSystem={handleResetSystem}
+          connectionStatus={connectionStatus}
+        />
+      )}
 
       {/* Primary branding header for active workspaces */}
       {currentRole === 'admin' && (
