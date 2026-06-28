@@ -75,12 +75,13 @@ export default function AdminDashboard({
   const [newTitle, setNewTitle] = useState('Сайншанд сумын ИТХ-ын Ээлжит XV Хуралдаан');
   const [newDate, setNewDate] = useState('2026-06-03');
   const [newTime, setNewTime] = useState('10:00');
-  const [newAgendas, setNewAgendas] = useState<string[]>([
-    'Сайншанд сумын гэрэлтүүлэг цахилгаан эрчим хүчийг шинжилж засах төсөл',
-    'Сумын залуучуудын спортын ордон байгуулах төсөвт зардлыг батлах тухай',
-    'Төрийн албан хаагчдыг чадваржуулах дотоод сургалт семинар'
+  const [newAgendas, setNewAgendas] = useState<{ id: string; title: string }[]>([
+    { id: 'pre-0', title: 'Сайншанд сумын гэрэлтүүлэг цахилгаан эрчим хүчийг шинжилж засах төсөл' },
+    { id: 'pre-1', title: 'Сумын залуучуудын спортын ордон байгуулах төсөвт зардлыг батлах тухай' },
+    { id: 'pre-2', title: 'Төрийн албан хаагчдыг чадваржуулах дотоод сургалт семинар' },
   ]);
   const [tempAgendaInput, setTempAgendaInput] = useState('');
+  const [pendingMaterials, setPendingMaterials] = useState<Record<string, Partial<AgendaMaterial>[]>>({});
 
   // Add material inputs
   const [selectedAgendaForMat, setSelectedAgendaForMat] = useState('');
@@ -133,11 +134,11 @@ export default function AdminDashboard({
       alert('Хэлэлцэх асуудал оруулах шаардлагатай.');
       return;
     }
-    const parsedAgendas: AgendaItem[] = newAgendas.map((title, i) => ({
-      id: `agenda-n-${Date.now()}-${i}`,
-      title: `${i + 1}. ${title}`,
+    const parsedAgendas: AgendaItem[] = newAgendas.map((ag, i) => ({
+      id: ag.id,
+      title: `${i + 1}. ${ag.title}`,
       order: i + 1,
-      materials: []
+      materials: (pendingMaterials[ag.id] || []) as AgendaMaterial[]
     }));
     
     try {
@@ -148,6 +149,7 @@ export default function AdminDashboard({
         agenda: parsedAgendas
       });
       showToast('Шинэ хуралдаан амжилттай үүсэж сувгаар цацагдлаа.');
+      setPendingMaterials({});
       setAdminTab('control');
     } catch (e) {
       alert('Алдаа гарлаа.');
@@ -156,7 +158,7 @@ export default function AdminDashboard({
 
   const handleAddAgendaText = () => {
     if (tempAgendaInput.trim()) {
-      setNewAgendas([...newAgendas, tempAgendaInput.trim()]);
+      setNewAgendas([...newAgendas, { id: `pre-${Date.now()}`, title: tempAgendaInput.trim() }]);
       setTempAgendaInput('');
     }
   };
@@ -169,6 +171,24 @@ export default function AdminDashboard({
     e.preventDefault();
     if (!selectedAgendaForMat || !matTitle) {
       alert('Хэлэлцэх асуудал болон файлын нэрийг оруулна уу.');
+      return;
+    }
+    const isPending = newAgendas.some(ag => ag.id === selectedAgendaForMat);
+    if (isPending) {
+      const mat: Partial<AgendaMaterial> = {
+        id: `mat-${Date.now()}`,
+        title: matTitle,
+        fileType: matType,
+        fileSize: matSize,
+        contentSummary: matContent || 'Орон нутгийн танилцуулга материал.'
+      };
+      setPendingMaterials(prev => ({
+        ...prev,
+        [selectedAgendaForMat]: [...(prev[selectedAgendaForMat] || []), mat]
+      }));
+      showToast('Материал хуралдаан үүсэхэд нэмэгдэнэ.');
+      setMatTitle('');
+      setMatContent('');
       return;
     }
     try {
@@ -1174,9 +1194,14 @@ export default function AdminDashboard({
                 <label className="block font-bold text-slate-650 mb-1">Хэлэлцэх асуудлын жагсаалт ({newAgendas.length})</label>
                 
                 <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 mb-2">
-                  {newAgendas.map((item, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-150 p-2 rounded-lg flex items-center justify-between gap-2">
-                      <span className="truncate flex-1 font-sans text-[11px] text-slate-700">{idx + 1}. {item}</span>
+                  {newAgendas.map((ag, idx) => (
+                    <div key={ag.id} className="bg-slate-50 border border-slate-150 p-2 rounded-lg flex items-center justify-between gap-2">
+                      <span className="truncate flex-1 font-sans text-[11px] text-slate-700">
+                        {idx + 1}. {ag.title}
+                        {pendingMaterials[ag.id]?.length ? (
+                          <span className="ml-1.5 text-blue-500 font-mono text-[9px]">({pendingMaterials[ag.id].length} материал)</span>
+                        ) : null}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleRemoveAgendaIndex(idx)}
@@ -1224,21 +1249,30 @@ export default function AdminDashboard({
               <ListPlus size={15} className="text-blue-600" /> ХУРАЛДААНЫ ТОХИРОХ МАТЕРИАЛ ХУУЛАХ
             </h4>
 
-            {meeting ? (
+            {(meeting || newAgendas.length > 0) ? (
               <form onSubmit={handleAddMaterialSubmit} className="space-y-3.5 text-xs">
                 <div>
                   <label className="block font-bold text-slate-650 mb-1">Холбогдох асуудал</label>
                   <select
                     value={selectedAgendaForMat}
                     onChange={(e) => setSelectedAgendaForMat(e.target.value)}
+                    title="Холбогдох асуудал сонгох"
                     className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none cursor-pointer"
                     required
                   >
-                    <option value="">-- Agenda сонгох --</option>
-                    {meeting.agenda.map(ag => (
-                      <option key={ag.id} value={ag.id}>{ag.title.substring(0, 50)}...</option>
-                    ))}
+                    <option value="">-- Асуудал сонгох --</option>
+                    {meeting
+                      ? meeting.agenda.map(ag => (
+                          <option key={ag.id} value={ag.id}>{ag.title.substring(0, 60)}</option>
+                        ))
+                      : newAgendas.map((ag, i) => (
+                          <option key={ag.id} value={ag.id}>{i + 1}. {ag.title.substring(0, 55)}</option>
+                        ))
+                    }
                   </select>
+                  {!meeting && (
+                    <p className="text-[10px] text-amber-600 mt-1">Зүүн талд хэлэлцэх асуудал нэмсний дараа автоматаар гарна</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
