@@ -320,6 +320,15 @@ app.post('/api/admin/delegate/edit', (req: Request, res: Response) => {
   res.status(404).json({ error: 'Delegate not found' });
 });
 
+app.post('/api/admin/delegate/delete', (req: Request, res: Response) => {
+  const { delegateId } = req.body;
+  const idx = seedDelegates.findIndex(x => x.id === delegateId);
+  if (idx === -1) return res.status(404).json({ error: 'Олдсонгүй' });
+  seedDelegates.splice(idx, 1);
+  broadcastState();
+  return res.json({ success: true });
+});
+
 app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
   const { title, date, time, agenda } = req.body;
   serverMeeting = {

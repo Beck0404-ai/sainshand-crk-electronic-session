@@ -583,6 +583,15 @@ app.post('/api/admin/delegate/edit', (req: Request, res: Response) => {
   }
 });
 
+app.post('/api/admin/delegate/delete', (req: Request, res: Response) => {
+  const { delegateId } = req.body;
+  const idx = seedDelegates.findIndex(x => x.id === delegateId);
+  if (idx === -1) return res.status(404).json({ error: 'Олдсонгүй' });
+  seedDelegates.splice(idx, 1);
+  broadcastState();
+  return res.json({ success: true });
+});
+
 // Delegate self-registration
 app.post('/api/delegate/register', (req: Request, res: Response) => {
   const { username, fullName, party, district, phone, email, bio, password } = req.body;

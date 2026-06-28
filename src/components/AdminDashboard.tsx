@@ -8,7 +8,7 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, Vot
 import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
-  Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock
+  Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -28,6 +28,7 @@ interface AdminDashboardProps {
   onResetPassword: (delegateId: string) => Promise<void>;
   onGetCredentials: (delegateId: string) => Promise<{ username: string; password: string }>;
   onChangePassword: (delegateId: string, newPassword: string) => Promise<void>;
+  onDeleteDelegate: (delegateId: string) => Promise<void>;
   onEditDelegate: (delegateId: string, data: Partial<Delegate>) => Promise<void>;
   onApproveDelegate: (pendingId: string) => Promise<void>;
   onRejectDelegate: (pendingId: string) => Promise<void>;
@@ -56,6 +57,7 @@ export default function AdminDashboard({
   onResetPassword,
   onGetCredentials,
   onChangePassword,
+  onDeleteDelegate,
   onEditDelegate,
   onApproveDelegate,
   onRejectDelegate,
@@ -412,8 +414,8 @@ export default function AdminDashboard({
                   </button>
                 </div>
               </div>
-              <div className="border-t pt-3">
-                <span className="text-slate-400 block mb-1">Шинэ нууц үг</span>
+              <div className="border-t pt-3 space-y-2">
+                <span className="text-slate-400 block mb-1">Нууц үг солих</span>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -427,6 +429,14 @@ export default function AdminDashboard({
                     {credSaving ? '...' : 'Хадгалах'}
                   </button>
                 </div>
+                <button type="button" onClick={async () => {
+                  if (!credentialsModal) return;
+                  await onResetPassword(credentialsModal.delegate.id);
+                  setCredentialsModal({ ...credentialsModal, password: '123' });
+                  showToast('Нууц үг "123" болгож сэргээгдлээ.');
+                }} className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 cursor-pointer py-1">
+                  <RotateCcw size={11} /> "123" болгож сэргээх
+                </button>
               </div>
             </div>
             <button onClick={() => setCredentialsModal(null)}
@@ -453,6 +463,21 @@ export default function AdminDashboard({
                   className="w-full px-3 py-1.5 rounded-lg border border-slate-205 outline-none focus:outline-blue-500/50 bg-slate-50"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">Нам / Бүлэг</label>
+                <select
+                  value={editParty}
+                  onChange={(e) => setEditParty(e.target.value as any)}
+                  title="Нам / Бүлэг сонгох"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-205 outline-none focus:outline-blue-500/50 bg-slate-50"
+                >
+                  <option value="МАН">МАН</option>
+                  <option value="АН">АН</option>
+                  <option value="ХҮН">ХҮН</option>
+                  <option value="Бие даагч">Бие даагч</option>
+                </select>
               </div>
 
               <div>
@@ -1075,6 +1100,18 @@ export default function AdminDashboard({
                           title="Засварлах"
                         >
                           <Edit2 size={12} />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`"${d.fullName}"-ийг системээс устгах уу?`)) {
+                              await onDeleteDelegate(d.id);
+                              showToast(`"${d.fullName}" устгагдлаа.`);
+                            }
+                          }}
+                          className="p-1 px-1.5 bg-slate-50 border border-slate-200 text-slate-500 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer"
+                          title="Устгах"
+                        >
+                          <Trash2 size={12} />
                         </button>
                       </td>
                     </tr>

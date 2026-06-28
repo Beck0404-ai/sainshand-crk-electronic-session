@@ -336,6 +336,14 @@ export default function App() {
     });
   };
 
+  const deleteDelegate = async (delegateId: string) => {
+    await fetch('/api/admin/delegate/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delegateId })
+    });
+  };
+
   const createMeeting = async (meetingData: { title: string; date: string; time: string; agenda: AgendaItem[] }) => {
     await fetch('/api/admin/meeting/create', {
       method: 'POST',
@@ -651,6 +659,7 @@ export default function App() {
             onResetPassword={resetPassword}
             onGetCredentials={getCredentials}
             onChangePassword={changePassword}
+            onDeleteDelegate={deleteDelegate}
             onEditDelegate={editDelegate}
             onApproveDelegate={approveDelegate}
             onRejectDelegate={rejectDelegate}
