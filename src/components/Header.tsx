@@ -63,9 +63,6 @@ export default function Header({
             <h1 className="text-base md:text-xl font-bold text-slate-900 tracking-tight leading-tight mt-0.5">
               Цахим хуралдааны систем
             </h1>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Бодит хугацааны ирц, санал хураалт, үг хэлэлтийн нэгдсэн удирдамж
-            </p>
           </div>
         </div>
 

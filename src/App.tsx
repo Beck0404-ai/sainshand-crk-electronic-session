@@ -617,7 +617,7 @@ export default function App() {
       )}
 
       {/* Primary branding header for active workspaces */}
-      {currentRole === 'admin' && (
+      {currentRole !== 'projector' && (
         <Header 
           currentRole={currentRole} 
           currentDelegateId={currentDelegateId} 
