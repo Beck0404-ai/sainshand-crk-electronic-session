@@ -72,14 +72,10 @@ export default function AdminDashboard({
   const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports'>('control');
   
   // Create meeting inputs
-  const [newTitle, setNewTitle] = useState('Сайншанд сумын ИТХ-ын Ээлжит XV Хуралдаан');
-  const [newDate, setNewDate] = useState('2026-06-03');
-  const [newTime, setNewTime] = useState('10:00');
-  const [newAgendas, setNewAgendas] = useState<{ id: string; title: string }[]>([
-    { id: 'pre-0', title: 'Сайншанд сумын гэрэлтүүлэг цахилгаан эрчим хүчийг шинжилж засах төсөл' },
-    { id: 'pre-1', title: 'Сумын залуучуудын спортын ордон байгуулах төсөвт зардлыг батлах тухай' },
-    { id: 'pre-2', title: 'Төрийн албан хаагчдыг чадваржуулах дотоод сургалт семинар' },
-  ]);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [newAgendas, setNewAgendas] = useState<{ id: string; title: string }[]>([]);
   const [tempAgendaInput, setTempAgendaInput] = useState('');
   const [pendingMaterials, setPendingMaterials] = useState<Record<string, Partial<AgendaMaterial>[]>>({});
 
