@@ -1271,16 +1271,16 @@ export default function AdminDashboard({
                     required
                   >
                     <option value="">-- Асуудал сонгох --</option>
-                    {meeting
-                      ? meeting.agenda.map(ag => (
-                          <option key={ag.id} value={ag.id}>{ag.title.substring(0, 60)}</option>
-                        ))
-                      : newAgendas.map((ag, i) => (
+                    {newAgendas.length > 0
+                      ? newAgendas.map((ag, i) => (
                           <option key={ag.id} value={ag.id}>{i + 1}. {ag.title.substring(0, 55)}</option>
+                        ))
+                      : meeting?.agenda.map(ag => (
+                          <option key={ag.id} value={ag.id}>{ag.title.substring(0, 60)}</option>
                         ))
                     }
                   </select>
-                  {!meeting && (
+                  {newAgendas.length === 0 && !meeting && (
                     <p className="text-[10px] text-amber-600 mt-1">Зүүн талд хэлэлцэх асуудал нэмсний дараа автоматаар гарна</p>
                   )}
                 </div>
