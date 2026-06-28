@@ -21,6 +21,7 @@ interface DelegateDashboardProps {
   onLeaveSpeakerQueue: () => Promise<void>;
   onSubmitVote: (choice: 'Зөвшөөрсөн' | 'Татгалзсан') => Promise<void>;
   onUpdateProfile: (data: { phone: string; email: string; bio: string }) => Promise<void>;
+  onLogout: () => void;
 }
 
 export default function DelegateDashboard({
@@ -32,7 +33,8 @@ export default function DelegateDashboard({
   onJoinSpeakerQueue,
   onLeaveSpeakerQueue,
   onSubmitVote,
-  onUpdateProfile
+  onUpdateProfile,
+  onLogout
 }: DelegateDashboardProps) {
   // UI Tabs & Interactive states
   const [activeTab, setActiveTab] = useState<'agenda' | 'notifications' | 'archive'>('agenda');
@@ -309,6 +311,12 @@ export default function DelegateDashboard({
                   className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-605 text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer"
                 >
                   Мэдээлэл засварлах
+                </button>
+                <button
+                  onClick={() => { if (confirm('Системээс гарах уу?')) onLogout(); }}
+                  className="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  Системээс гарах
                 </button>
               </div>
             )}

@@ -640,6 +640,7 @@ export default function App() {
             onLeaveSpeakerQueue={leaveSpeakerQueue}
             onSubmitVote={submitVote}
             onUpdateProfile={updateProfile}
+            onLogout={handleLogout}
           />
         )}
 
