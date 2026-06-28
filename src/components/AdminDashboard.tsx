@@ -1228,6 +1228,7 @@ export default function AdminDashboard({
                     type="text"
                     value={tempAgendaInput}
                     onChange={(e) => setTempAgendaInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddAgendaText(); } }}
                     className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none"
                     placeholder="Шинэ асуудал оруулах..."
                   />
