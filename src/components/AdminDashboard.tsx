@@ -549,6 +549,20 @@ export default function AdminDashboard({
                 Болих
               </button>
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!editingDelegate) return;
+                if (confirm(`"${editingDelegate.fullName}"-ийг системээс бүрмөсөн устгах уу?`)) {
+                  await onDeleteDelegate(editingDelegate.id);
+                  setEditingDelegate(null);
+                  showToast(`"${editingDelegate.fullName}" устгагдлаа.`);
+                }
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 py-2 rounded-lg transition cursor-pointer border border-transparent hover:border-rose-200"
+            >
+              <Trash2 size={12} /> Төлөөлөгчийг устгах
+            </button>
           </form>
         </div>
       )}
