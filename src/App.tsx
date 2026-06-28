@@ -290,6 +290,20 @@ export default function App() {
     });
   };
 
+  const getCredentials = async (delegateId: string): Promise<{ username: string; password: string }> => {
+    const res = await fetch(`/api/admin/delegate/${delegateId}/credentials`);
+    return res.json();
+  };
+
+  const changePassword = async (delegateId: string, newPassword: string) => {
+    const res = await fetch('/api/admin/delegate/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delegateId, newPassword })
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+  };
+
   const approveDelegate = async (pendingId: string) => {
     await fetch('/api/admin/delegate/approve', {
       method: 'POST',
@@ -635,6 +649,8 @@ export default function App() {
             onSkipSpeaker={skipSpeaker}
             onClearQueue={clearQueue}
             onResetPassword={resetPassword}
+            onGetCredentials={getCredentials}
+            onChangePassword={changePassword}
             onEditDelegate={editDelegate}
             onApproveDelegate={approveDelegate}
             onRejectDelegate={rejectDelegate}

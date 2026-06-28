@@ -8,7 +8,7 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, Vot
 import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
-  Monitor, UserPlus, UserCheck, UserX
+  Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -26,6 +26,8 @@ interface AdminDashboardProps {
   onSkipSpeaker: () => Promise<void>;
   onClearQueue: () => Promise<void>;
   onResetPassword: (delegateId: string) => Promise<void>;
+  onGetCredentials: (delegateId: string) => Promise<{ username: string; password: string }>;
+  onChangePassword: (delegateId: string, newPassword: string) => Promise<void>;
   onEditDelegate: (delegateId: string, data: Partial<Delegate>) => Promise<void>;
   onApproveDelegate: (pendingId: string) => Promise<void>;
   onRejectDelegate: (pendingId: string) => Promise<void>;
@@ -52,6 +54,8 @@ export default function AdminDashboard({
   onSkipSpeaker,
   onClearQueue,
   onResetPassword,
+  onGetCredentials,
+  onChangePassword,
   onEditDelegate,
   onApproveDelegate,
   onRejectDelegate,
@@ -89,6 +93,12 @@ export default function AdminDashboard({
   // Direct custom speaker triggers
   const [directSpeakerId, setDirectSpeakerId] = useState('');
   const [directSpeakerTurn, setDirectSpeakerTurn] = useState(1);
+
+  // Credentials modal state
+  const [credentialsModal, setCredentialsModal] = useState<{ delegate: Delegate; username: string; password: string } | null>(null);
+  const [credNewPassword, setCredNewPassword] = useState('');
+  const [credShowPassword, setCredShowPassword] = useState(false);
+  const [credSaving, setCredSaving] = useState(false);
 
   // Edit delegate details modal overlay state
   const [editingDelegate, setEditingDelegate] = useState<Delegate | null>(null);
@@ -205,6 +215,29 @@ export default function AdminDashboard({
     if (confirm('Энэхүү төлөөлөгчийн нэвтрэх нууц үгийг сэргээж "123" болгох уу?')) {
       await onResetPassword(dId);
       showToast('Төлөөлөгчийн нууц үг амжилттай шинэчлэгдлээ.');
+    }
+  };
+
+  const handleOpenCredentials = async (d: Delegate) => {
+    const creds = await onGetCredentials(d.id);
+    setCredentialsModal({ delegate: d, username: creds.username, password: creds.password });
+    setCredNewPassword('');
+    setCredShowPassword(false);
+  };
+
+  const handleSaveNewPassword = async () => {
+    if (!credentialsModal) return;
+    if (!credNewPassword || credNewPassword.length < 3) { alert('Нууц үг хамгийн багадаа 3 тэмдэгт байна.'); return; }
+    setCredSaving(true);
+    try {
+      await onChangePassword(credentialsModal.delegate.id, credNewPassword);
+      setCredentialsModal({ ...credentialsModal, password: credNewPassword });
+      setCredNewPassword('');
+      showToast('Нууц үг амжилттай солигдлоо.');
+    } catch (e: any) {
+      alert(e.message || 'Алдаа гарлаа.');
+    } finally {
+      setCredSaving(false);
     }
   };
 
@@ -351,6 +384,59 @@ export default function AdminDashboard({
       )}
 
       {/* EDIT DELEGATE MODAL OVERLAY */}
+      {/* Credentials modal */}
+      {credentialsModal && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border text-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl">
+            <h3 className="font-bold text-sm text-slate-950 border-b pb-3 mb-4 flex items-center gap-2 uppercase tracking-wide">
+              <Lock size={15} className="text-blue-600" /> Нэвтрэх мэдээлэл
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <span className="text-slate-400 block mb-1">Нэр</span>
+                <span className="font-semibold text-slate-800">{credentialsModal.delegate.fullName}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block mb-1">Нэвтрэх нэр</span>
+                <span className="font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">{credentialsModal.username}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block mb-1">Одоогийн нууц үг</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono bg-slate-100 px-2 py-1 rounded text-slate-700 flex-1">
+                    {credShowPassword ? credentialsModal.password : '••••••'}
+                  </span>
+                  <button type="button" onClick={() => setCredShowPassword(!credShowPassword)}
+                    className="p-1.5 bg-slate-100 rounded hover:bg-slate-200 transition text-slate-500 cursor-pointer">
+                    {credShowPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                  </button>
+                </div>
+              </div>
+              <div className="border-t pt-3">
+                <span className="text-slate-400 block mb-1">Шинэ нууц үг</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={credNewPassword}
+                    onChange={e => setCredNewPassword(e.target.value)}
+                    placeholder="Шинэ нууц үг оруулах..."
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <button type="button" onClick={handleSaveNewPassword} disabled={credSaving || !credNewPassword}
+                    className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer">
+                    {credSaving ? '...' : 'Хадгалах'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setCredentialsModal(null)}
+              className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-600 py-2 cursor-pointer">
+              Хаах
+            </button>
+          </div>
+        </div>
+      )}
+
       {editingDelegate && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fadeIn">
           <form onSubmit={handleSaveEditDelegate} className="bg-white border text-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl">
@@ -977,9 +1063,9 @@ export default function AdminDashboard({
                       <td className="py-2.5 px-3 text-slate-500 font-mono">{d.phone}</td>
                       <td className="py-2.5 px-3 text-right flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => handleResetPasswordClick(d.id)}
+                          onClick={() => handleOpenCredentials(d)}
                           className="p-1 px-1.5 bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 rounded hover:bg-slate-100 transition cursor-pointer"
-                          title="Нууц үг сэргээх"
+                          title="Нэвтрэх мэдээлэл харах / нууц үг солих"
                         >
                           <Key size={12} />
                         </button>

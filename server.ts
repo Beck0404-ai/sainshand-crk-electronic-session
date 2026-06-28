@@ -543,10 +543,27 @@ app.post('/api/admin/delegate/reset-password', (req: Request, res: Response) => 
   const d = seedDelegates.find(x => x.id === delegateId);
   if (d) {
     d.password = '123';
+    broadcastState();
     res.json({ success: true, message: `Төлөөлөгчийн нууц үгийг амжилттай '123' болгож шинэчиллээ.` });
   } else {
     res.status(404).json({ error: 'Delegate not found' });
   }
+});
+
+app.get('/api/admin/delegate/:id/credentials', (req: Request, res: Response) => {
+  const d = seedDelegates.find(x => x.id === req.params.id);
+  if (!d) return res.status(404).json({ error: 'Олдсонгүй' });
+  return res.json({ username: d.username, password: d.password || '123' });
+});
+
+app.post('/api/admin/delegate/change-password', (req: Request, res: Response) => {
+  const { delegateId, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 3) return res.status(400).json({ error: 'Нууц үг хэтэрхий богино байна.' });
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Олдсонгүй' });
+  d.password = newPassword;
+  broadcastState();
+  return res.json({ success: true });
 });
 
 // Edit Delegate info (Admin Tool)

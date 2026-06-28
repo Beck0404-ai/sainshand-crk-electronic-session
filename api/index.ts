@@ -293,8 +293,24 @@ app.post('/api/admin/speaker/clear', (_req: Request, res: Response) => {
 
 app.post('/api/admin/delegate/reset-password', (req: Request, res: Response) => {
   const d = seedDelegates.find(x => x.id === req.body.delegateId);
-  if (d) { (d as any).password = '123'; return res.json({ success: true }); }
+  if (d) { (d as any).password = '123'; broadcastState(); return res.json({ success: true }); }
   res.status(404).json({ error: 'Delegate not found' });
+});
+
+app.get('/api/admin/delegate/:id/credentials', (req: Request, res: Response) => {
+  const d = seedDelegates.find(x => x.id === req.params.id);
+  if (!d) return res.status(404).json({ error: 'Олдсонгүй' });
+  return res.json({ username: (d as any).username, password: (d as any).password || '123' });
+});
+
+app.post('/api/admin/delegate/change-password', (req: Request, res: Response) => {
+  const { delegateId, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 3) return res.status(400).json({ error: 'Нууц үг хэтэрхий богино байна.' });
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Олдсонгүй' });
+  (d as any).password = newPassword;
+  broadcastState();
+  return res.json({ success: true });
 });
 
 app.post('/api/admin/delegate/edit', (req: Request, res: Response) => {
