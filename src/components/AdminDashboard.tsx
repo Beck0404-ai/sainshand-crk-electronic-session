@@ -38,6 +38,7 @@ interface AdminDashboardProps {
   onSelectAgenda: (agendaItemId: string) => Promise<void>;
   onSetMeetingStatus: (status: 'товлогдсон' | 'идэвхтэй' | 'дууссан') => Promise<void>;
   onViewProjector: () => void;
+  onClearNotifications: () => Promise<void>;
 }
 
 export default function AdminDashboard({
@@ -66,7 +67,8 @@ export default function AdminDashboard({
   onAddMaterial,
   onSelectAgenda,
   onSetMeetingStatus,
-  onViewProjector
+  onViewProjector,
+  onClearNotifications
 }: AdminDashboardProps) {
   // Navigation Tabs for Sub-panels
   const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports'>('control');
@@ -1507,6 +1509,39 @@ export default function AdminDashboard({
 
           <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-[10px] text-slate-500 leading-normal font-mono">
              ℹ️ <strong>Тайлбар:</strong> Татаж авсан файлууд нь Монгол Барилгын стандартын дагуу нарийвчлан кодлогдсон тул Microsoft Excel, Google Sheets-д ашиглахад бүрэн нийцтэй байна.
+          </div>
+
+          {/* NOTIFICATIONS SECTION */}
+          <div className="border-t border-slate-200 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <span>🔔</span> Мэдэгдлийн жагсаалт ({notifications.length})
+              </h4>
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { if (confirm('Бүх мэдэгдлийг цэвэрлэх үү?')) onClearNotifications(); }}
+                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <RotateCcw size={12} /> Бүгдийг цэвэрлэх
+                </button>
+              )}
+            </div>
+            {notifications.length === 0 ? (
+              <p className="text-xs text-slate-400 italic text-center py-4">Мэдэгдэл байхгүй байна.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {[...notifications].reverse().map(n => (
+                  <div key={n.id} className={`p-3 rounded-xl border text-xs ${n.isRead ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <span className="font-bold text-slate-800">{n.title}</span>
+                      <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{new Date(n.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-slate-500 leading-normal">{n.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* VOTING ARCHIVE */}

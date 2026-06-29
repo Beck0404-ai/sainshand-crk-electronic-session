@@ -718,6 +718,14 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
 });
 
 
+// Clear all notifications
+app.post('/api/admin/notifications/clear', async (req: Request, res: Response) => {
+  serverNotifications = [];
+  await dbSave('notifications', serverNotifications);
+  broadcastState();
+  res.json({ success: true });
+});
+
 // Reset entire system back to clean empty state (Admin Tool)
 app.post('/api/system/reset', async (req: Request, res: Response) => {
   serverMeeting = null;

@@ -394,6 +394,10 @@ export default function App() {
     });
   };
 
+  const handleClearNotifications = async () => {
+    await fetch('/api/admin/notifications/clear', { method: 'POST' });
+  };
+
   const activeDelegate = delegates.find(d => d.id === currentDelegateId);
 
   // If no role is selected, show a beautiful, high-fidelity portal entry page with login requirements
@@ -690,6 +694,7 @@ export default function App() {
             onSelectAgenda={selectAgenda}
             onSetMeetingStatus={setMeetingStatus}
             onViewProjector={() => handleRoleChange('projector', null)}
+            onClearNotifications={handleClearNotifications}
           />
         )}
 
