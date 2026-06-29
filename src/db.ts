@@ -30,3 +30,13 @@ export async function dbSave(key: string, value: unknown): Promise<void> {
     console.error('DB save error:', e);
   }
 }
+
+export async function dbClearAll(): Promise<void> {
+  const db = getClient();
+  if (!db) return;
+  try {
+    await db.from('app_state').delete().neq('key', '');
+  } catch (e) {
+    console.error('DB clear error:', e);
+  }
+}

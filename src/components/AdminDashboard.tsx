@@ -85,7 +85,8 @@ export default function AdminDashboard({
   const [matType, setMatType] = useState<'pdf' | 'docx' | 'xlsx'>('pdf');
   const [matSize, setMatSize] = useState('2.4 MB');
   const [matContent, setMatContent] = useState('');
-  const [matUrl, setMatUrl] = useState('');
+  const [matFile, setMatFile] = useState<File | null>(null);
+  const [matUploading, setMatUploading] = useState(false);
 
   // Voting setup inputs
   const [votingTitle, setVotingTitle] = useState('Сайншанд сумын төсвийн тодотголыг дэмжих эсэх санал хураалт');
@@ -170,6 +171,28 @@ export default function AdminDashboard({
       alert('Хэлэлцэх асуудал болон файлын нэрийг оруулна уу.');
       return;
     }
+
+    let uploadedFileUrl: string | undefined;
+    if (matFile) {
+      setMatUploading(true);
+      try {
+        const form = new FormData();
+        form.append('file', matFile);
+        const res = await fetch('/api/admin/material/upload', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        uploadedFileUrl = data.fileUrl;
+        const fileSizeKB = Math.round(matFile.size / 1024);
+        if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
+        else setMatSize(`${fileSizeKB} KB`);
+      } catch {
+        alert('PDF файл байршуулахад алдаа гарлаа.');
+        setMatUploading(false);
+        return;
+      }
+      setMatUploading(false);
+    }
+
     const isPending = newAgendas.some(ag => ag.id === selectedAgendaForMat);
     if (isPending) {
       const mat: Partial<AgendaMaterial> = {
@@ -178,14 +201,14 @@ export default function AdminDashboard({
         fileType: matType,
         fileSize: matSize,
         contentSummary: matContent || 'Орон нутгийн танилцуулга материал.',
-        fileUrl: matUrl.trim() || undefined
+        fileUrl: uploadedFileUrl
       };
       setPendingMaterials(prev => ({
         ...prev,
         [selectedAgendaForMat]: [...(prev[selectedAgendaForMat] || []), mat]
       }));
       showToast('Материал хуралдаан үүсэхэд нэмэгдэнэ.');
-      setMatTitle(''); setMatContent(''); setMatUrl('');
+      setMatTitle(''); setMatContent(''); setMatFile(null);
       return;
     }
     try {
@@ -194,10 +217,10 @@ export default function AdminDashboard({
         fileType: matType,
         fileSize: matSize,
         contentSummary: matContent || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах заалт уншлага.',
-        fileUrl: matUrl.trim() || undefined
+        fileUrl: uploadedFileUrl
       });
       showToast('Файл амжилттай хавсаргагдлаа.');
-      setMatTitle(''); setMatContent(''); setMatUrl('');
+      setMatTitle(''); setMatContent(''); setMatFile(null);
     } catch (e) {
       alert('Материал хавсаргахад алдаа гарлаа.');
     }
@@ -1377,19 +1400,22 @@ export default function AdminDashboard({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-655 mb-1">
-                    PDF/Файлын холбоос (URL) <span className="text-slate-400 font-normal">— Google Drive, OneDrive гэх мэт</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={matUrl}
-                    onChange={(e) => setMatUrl(e.target.value)}
-                    placeholder="https://drive.google.com/file/d/.../preview"
-                    className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs font-mono"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    💡 Google Drive: файл нээгээд Share → Copy link → URL-ийн <code className="bg-slate-100 px-1 rounded">/view</code>-г <code className="bg-slate-100 px-1 rounded">/preview</code> болгоно уу
-                  </p>
+                  <label className="block font-bold text-slate-655 mb-1">PDF файл байршуулах</label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.xlsx"
+                      title="PDF, Word, Excel файл сонгох"
+                      onChange={(e) => setMatFile(e.target.files?.[0] || null)}
+                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs cursor-pointer file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                  </div>
+                  {matFile && (
+                    <p className="text-[10px] text-emerald-600 mt-1 font-semibold">
+                      ✓ {matFile.name} ({Math.round(matFile.size / 1024)} KB)
+                    </p>
+                  )}
+                  <p className="text-[10px] text-slate-400 mt-1">PDF, Word, Excel — дээд тал нь 20MB</p>
                 </div>
 
                 <div>
@@ -1405,9 +1431,10 @@ export default function AdminDashboard({
 
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-lg text-xs transition cursor-pointer shadow-sm"
+                  disabled={matUploading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2.5 px-3 rounded-lg text-xs transition cursor-pointer shadow-sm"
                 >
-                  Материал системд байршуулах (Upload)
+                  {matUploading ? '⏳ Байршуулж байна...' : 'Материал системд байршуулах'}
                 </button>
               </form>
             ) : (
