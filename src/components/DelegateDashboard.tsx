@@ -393,8 +393,23 @@ export default function DelegateDashboard({
         <div className="lg:col-span-4 space-y-5">
 
           {/* PROFILE CARD */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center gap-3.5 border-b border-slate-100 pb-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 relative">
+            {/* Menu button inside card */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="absolute top-3.5 right-3.5 h-8 w-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 rounded-lg flex items-center justify-center cursor-pointer transition"
+              title="Цэс нээх"
+            >
+              <Menu size={15} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            <div className="flex items-center gap-3.5 border-b border-slate-100 pb-4 pr-8">
               <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
                 {delegate.fullName.substring(0, 3)}
               </div>
@@ -789,20 +804,6 @@ export default function DelegateDashboard({
         </div>
       </div>
 
-      {/* FIXED FLOATING MENU BUTTON - top right */}
-      <button
-        type="button"
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-3 right-3 h-9 w-9 bg-white hover:bg-slate-100 active:scale-95 text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center cursor-pointer transition z-30"
-        title="Цэс нээх"
-      >
-        <Menu size={17} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-0.5 bg-rose-500 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white">
-            {unreadCount}
-          </span>
-        )}
-      </button>
 
     </div>
   );
