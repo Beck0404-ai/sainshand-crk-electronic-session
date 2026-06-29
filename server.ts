@@ -717,44 +717,58 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// PDF upload: base64 JSON → Supabase Storage REST API (Vercel-д ажиллана)
-app.post('/api/admin/material/upload', async (req: Request, res: Response) => {
-  const { fileName, mimeType, data } = req.body as { fileName: string; mimeType: string; data: string };
-  if (!data || !fileName) return res.status(400).json({ error: 'Файл байхгүй байна.' });
+// PDF upload: server → signed URL → browser uploads directly to Supabase (Vercel body limit байхгүй)
+app.post('/api/admin/material/signed-url', async (req: Request, res: Response) => {
+  const { fileName } = req.body as { fileName: string };
+  if (!fileName) return res.status(400).json({ error: 'Файлын нэр шаардлагатай.' });
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) return res.status(500).json({ error: 'Supabase тохиргоо байхгүй.' });
-
-  const buffer = Buffer.from(data, 'base64');
-  const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-
-  // Bucket үүсгэх (байгаа бол алдааг үл тоо)
-  await fetch(`${supabaseUrl}/storage/v1/bucket`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: 'materials', name: 'materials', public: true })
-  }).catch(() => {});
-
-  // Файлыг Supabase Storage REST API-аар шууд upload
-  const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/materials/${safeName}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': mimeType || 'application/pdf',
-      'x-upsert': 'true'
-    },
-    body: buffer
-  });
-
-  if (!uploadRes.ok) {
-    const errText = await uploadRes.text();
-    console.error('Storage error:', errText);
-    return res.status(500).json({ error: `Storage алдаа (${uploadRes.status}): ${errText.substring(0, 120)}` });
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'SUPABASE_URL эсвэл SUPABASE_SERVICE_KEY Vercel-д тохируулаагүй байна.' });
   }
 
+  const authHeaders = {
+    'Authorization': `Bearer ${supabaseKey}`,
+    'apikey': supabaseKey,
+    'Content-Type': 'application/json'
+  };
+
+  const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+
+  // Bucket үүсгэх (409 = аль хэдийн байна — тэр тохиолдолд OK)
+  const bucketRes = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ id: 'materials', name: 'materials', public: true })
+  });
+  if (!bucketRes.ok && bucketRes.status !== 409) {
+    const bucketErr = await bucketRes.text();
+    console.error('Bucket create error:', bucketRes.status, bucketErr);
+  }
+
+  // Signed upload URL үүсгэх
+  const signRes = await fetch(`${supabaseUrl}/storage/v1/object/sign/upload/materials/${safeName}`, {
+    method: 'POST',
+    headers: authHeaders
+  });
+
+  if (!signRes.ok) {
+    const errText = await signRes.text();
+    console.error('Sign URL error:', signRes.status, errText);
+    return res.status(500).json({ error: `Storage алдаа ${signRes.status}: ${errText.substring(0, 200)}` });
+  }
+
+  const signData = await signRes.json() as { url?: string; signedURL?: string; signedUrl?: string };
+  const relativeUrl = signData.url || signData.signedURL || signData.signedUrl || '';
+  if (!relativeUrl) {
+    return res.status(500).json({ error: `Supabase хариу буруу: ${JSON.stringify(signData)}` });
+  }
+
+  const signedUrl = relativeUrl.startsWith('http') ? relativeUrl : `${supabaseUrl}${relativeUrl}`;
   const publicUrl = `${supabaseUrl}/storage/v1/object/public/materials/${safeName}`;
-  res.json({ success: true, fileUrl: publicUrl });
+
+  res.json({ signedUrl, publicUrl });
 });
 
 // Reset entire system back to clean empty state (Admin Tool)

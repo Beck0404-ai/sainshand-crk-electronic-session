@@ -174,30 +174,32 @@ export default function AdminDashboard({
 
     let uploadedFileUrl: string | undefined;
     if (matFile) {
-      if (matFile.size > 4 * 1024 * 1024) {
-        alert('Файл 4MB-аас хэтэрсэн байна. Жижиг файл ашиглана уу.');
-        return;
-      }
       setMatUploading(true);
       try {
-        // Файлыг base64 болгож JSON-оор сервер рүү илгээнэ
-        const arrayBuffer = await matFile.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        const base64 = btoa(binary);
-
-        const res = await fetch('/api/admin/material/upload', {
+        // 1. Серверээс signed URL авна (жижиг JSON хүсэлт)
+        const urlRes = await fetch('/api/admin/material/signed-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: matFile.name, mimeType: matFile.type || 'application/pdf', data: base64 })
+          body: JSON.stringify({ fileName: matFile.name })
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({})) as { error?: string };
-          throw new Error(err.error || 'Upload амжилтгүй.');
+        if (!urlRes.ok) {
+          const errData = await urlRes.json().catch(() => ({})) as { error?: string };
+          throw new Error(errData.error || `Сервер алдаа: HTTP ${urlRes.status}`);
         }
-        const result = await res.json() as { fileUrl: string };
-        uploadedFileUrl = result.fileUrl;
+        const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; publicUrl: string };
+
+        // 2. Файлыг Vercel дайраалгүй шууд Supabase Storage-руу PUT
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': matFile.type || 'application/pdf' },
+          body: matFile
+        });
+        if (!uploadRes.ok) {
+          const uploadErr = await uploadRes.text().catch(() => '');
+          throw new Error(`Storage алдаа ${uploadRes.status}: ${uploadErr.substring(0, 100)}`);
+        }
+
+        uploadedFileUrl = publicUrl;
         const fileSizeKB = Math.round(matFile.size / 1024);
         if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
         else setMatSize(`${fileSizeKB} KB`);
