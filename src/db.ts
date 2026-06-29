@@ -31,6 +31,10 @@ export async function dbSave(key: string, value: unknown): Promise<void> {
   }
 }
 
+export function getSupabaseClient() {
+  return getClient();
+}
+
 export async function dbClearAll(): Promise<void> {
   const db = getClient();
   if (!db) return;

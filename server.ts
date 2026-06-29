@@ -7,11 +7,10 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
-import { dbLoad, dbSave, dbClearAll } from './src/db.js';
+import { dbLoad, dbSave, dbClearAll, getSupabaseClient } from './src/db.js';
 
 const isCjs = typeof __filename !== 'undefined' && typeof __dirname !== 'undefined';
 const _filename = isCjs ? __filename : (import.meta && import.meta.url ? fileURLToPath(import.meta.url) : '');
@@ -22,20 +21,8 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// PDF file uploads setup
-const uploadDir = path.join(_dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const safeName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-    cb(null, safeName);
-  }
-});
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB
-
-app.use('/uploads', express.static(uploadDir));
+// PDF file uploads — Supabase Storage (works on Vercel serverless)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 // Preseeded list of 29 delegates of Sainshand Soum
 const seedDelegates: any[] = [];
@@ -733,11 +720,28 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// PDF file upload endpoint
-app.post('/api/admin/material/upload', upload.single('file'), (req: Request, res: Response) => {
+// PDF file upload endpoint — Supabase Storage
+app.post('/api/admin/material/upload', upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: 'Файл байхгүй байна.' });
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ success: true, fileUrl, originalName: req.file.originalname, size: req.file.size });
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.status(500).json({ error: 'Supabase тохиргоо хийгдээгүй байна.' });
+
+  const safeName = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+
+  // Bucket байхгүй бол үүсгэнэ
+  await supabase.storage.createBucket('materials', { public: true }).catch(() => {});
+
+  const { error } = await supabase.storage
+    .from('materials')
+    .upload(safeName, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+
+  if (error) {
+    console.error('Storage upload error:', error);
+    return res.status(500).json({ error: `Файл хадгалахад алдаа: ${error.message}` });
+  }
+
+  const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(safeName);
+  res.json({ success: true, fileUrl: publicUrl, originalName: req.file.originalname, size: req.file.size });
 });
 
 // Reset entire system back to clean empty state (Admin Tool)
