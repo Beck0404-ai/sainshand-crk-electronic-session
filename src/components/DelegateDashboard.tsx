@@ -263,16 +263,8 @@ export default function DelegateDashboard({
               className="fixed right-0 top-0 h-full w-80 bg-white z-50 shadow-2xl flex flex-col"
             >
               {/* Drawer header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 bg-slate-900 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-white text-sm">
-                    {delegate.fullName.substring(0, 2)}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white text-sm leading-tight">{delegate.fullName}</p>
-                    <p className="text-[9px] text-slate-400 font-mono mt-0.5">Тойрог: {delegate.district.split(' ')[0]}</p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-700 bg-slate-900 flex-shrink-0">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest">Сайншанд сумын ИТХ</span>
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen(false)}
@@ -286,63 +278,80 @@ export default function DelegateDashboard({
               {/* Drawer scrollable content */}
               <div className="flex-1 overflow-y-auto">
 
-                {/* Profile info section */}
-                <div className="p-5 border-b border-slate-100">
-                  {isEditingProfile ? (
-                    <form onSubmit={handleProfileSave} className="space-y-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Профайл засварлах</span>
-                        <button type="button" onClick={() => setIsEditingProfile(false)}
-                          className="text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer transition">Болих</button>
+                {/* PROFILE CARD inside drawer */}
+                <div className="p-4 border-b border-slate-100">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    {/* Card top: avatar + name */}
+                    <div className="bg-slate-900 px-4 py-4 flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
+                        {delegate.fullName.substring(0, 3)}
                       </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Утасны дугаар</label>
-                        <input type="text" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)}
-                          placeholder="Утасны дугаар"
-                          className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50" required />
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-slate-400 font-mono uppercase tracking-wider">Тойрог: {delegate.district.split(' ')[0]}</p>
+                        <p className="font-bold text-white text-sm leading-tight mt-0.5 truncate">{delegate.fullName}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{delegate.email}</p>
                       </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">И-мэйл хаяг</label>
-                        <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)}
-                          placeholder="И-мэйл хаяг"
-                          className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50" required />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Товч намтар</label>
-                        <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={2}
-                          placeholder="Товч намтар..."
-                          className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50 resize-none" />
-                      </div>
-                      <button type="submit" disabled={isSavingProfile}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold py-2 rounded-lg cursor-pointer transition">
-                        {isSavingProfile ? 'Хадгалж байна...' : 'Хадгалах'}
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="text-[11px] text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-normal">
-                        {delegate.bio || 'Төлөөлөгчийн танилцуулга байхгүй байна.'}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-center">
-                        <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
-                          <span className="block text-base font-bold text-slate-800 font-mono">{delegate.attendedMeetingsCount}</span>
-                          <span className="text-[9px] text-slate-400">Оролцсон хурал</span>
-                        </div>
-                        <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
-                          <span className="block text-base font-bold text-slate-800 font-mono">{delegate.votesCastCount}</span>
-                          <span className="text-[9px] text-slate-400">Өгсөн санал</span>
-                        </div>
-                      </div>
-                      <div className="text-slate-500 text-[11px] space-y-1.5">
-                        <div className="flex items-center gap-2"><Phone size={11} className="text-slate-400 flex-shrink-0" /> {delegate.phone}</div>
-                        <div className="flex items-center gap-2"><Mail size={11} className="text-slate-400 flex-shrink-0" /> {delegate.email}</div>
-                      </div>
-                      <button type="button" onClick={() => setIsEditingProfile(true)}
-                        className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
-                        <Mail size={12} /> Мэдээлэл засварлах
-                      </button>
                     </div>
-                  )}
+
+                    {/* Card body */}
+                    <div className="p-4">
+                      {isEditingProfile ? (
+                        <form onSubmit={handleProfileSave} className="space-y-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Мэдээлэл засварлах</span>
+                            <button type="button" onClick={() => setIsEditingProfile(false)}
+                              className="text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer transition">Болих</button>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Утасны дугаар</label>
+                            <input type="text" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)}
+                              placeholder="Утасны дугаар"
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50" required />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">И-мэйл хаяг</label>
+                            <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)}
+                              placeholder="И-мэйл хаяг"
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50" required />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Товч намтар</label>
+                            <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={2}
+                              placeholder="Товч намтар..."
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:outline outline-blue-500/50 outline-2 bg-slate-50 resize-none" />
+                          </div>
+                          <button type="submit" disabled={isSavingProfile}
+                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold py-2 rounded-lg cursor-pointer transition">
+                            {isSavingProfile ? 'Хадгалж байна...' : 'Хадгалах'}
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="text-[11px] text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-normal">
+                            {delegate.bio || 'Төлөөлөгчийн танилцуулга байхгүй байна.'}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-center">
+                            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                              <span className="block text-base font-bold text-slate-800 font-mono">{delegate.attendedMeetingsCount}</span>
+                              <span className="text-[9px] text-slate-400">Оролцсон хурал</span>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                              <span className="block text-base font-bold text-slate-800 font-mono">{delegate.votesCastCount}</span>
+                              <span className="text-[9px] text-slate-400">Өгсөн санал</span>
+                            </div>
+                          </div>
+                          <div className="text-slate-500 text-[11px] space-y-1.5">
+                            <div className="flex items-center gap-2"><Phone size={11} className="text-slate-400 flex-shrink-0" /> {delegate.phone}</div>
+                            <div className="flex items-center gap-2"><Mail size={11} className="text-slate-400 flex-shrink-0" /> {delegate.email}</div>
+                          </div>
+                          <button type="button" onClick={() => setIsEditingProfile(true)}
+                            className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+                            <Mail size={12} /> Мэдээлэл засварлах
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Notifications section */}
@@ -442,34 +451,28 @@ export default function DelegateDashboard({
         {/* SIDEBAR COL_SPAN_4 */}
         <div className="lg:col-span-4 space-y-5">
 
-          {/* PROFILE CARD */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 relative">
-            {/* Menu button inside card */}
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen(true)}
-              className="absolute top-3.5 right-3.5 h-8 w-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 rounded-lg flex items-center justify-center cursor-pointer transition"
-              title="Цэс нээх"
-            >
-              <Menu size={15} />
+          {/* PROFILE CARD - compact, opens drawer */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-3 hover:bg-slate-50 active:scale-[0.99] transition cursor-pointer text-left relative"
+          >
+            <div className="h-11 w-11 rounded-xl bg-blue-600 text-white font-bold text-sm flex items-center justify-center shadow-sm flex-shrink-0">
+              {delegate.fullName.substring(0, 3)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] text-slate-400 font-mono uppercase tracking-wider">Тойрог: {delegate.district.split(' ')[0]}</p>
+              <p className="font-bold text-slate-900 text-sm leading-tight mt-0.5 truncate">{delegate.fullName}</p>
+            </div>
+            <div className="flex-shrink-0 relative">
+              <Menu size={16} className="text-slate-400" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
+                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
                   {unreadCount}
                 </span>
               )}
-            </button>
-
-            <div className="flex items-center gap-3.5 pr-10">
-              <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
-                {delegate.fullName.substring(0, 3)}
-              </div>
-              <div className="truncate">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold font-mono">Тойрог: {delegate.district.split(' ')[0]}</span>
-                <h3 className="font-bold text-slate-900 text-sm tracking-tight leading-tight mt-1">{delegate.fullName}</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5 truncate">{delegate.email}</p>
-              </div>
             </div>
-          </div>
+          </button>
 
           {/* ATTENDANCE */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
