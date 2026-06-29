@@ -130,7 +130,7 @@ export default function DelegateDashboard({
     (!selectedAgendaId && itemId === meeting?.activeAgendaItemId);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 pb-24" id="delegate-screen-area">
+    <div className="max-w-7xl mx-auto px-4 py-6" id="delegate-screen-area">
 
       {/* PDF VIEWER MODAL */}
       <AnimatePresence>
@@ -789,16 +789,16 @@ export default function DelegateDashboard({
         </div>
       </div>
 
-      {/* FIXED FLOATING MENU BUTTON */}
+      {/* FIXED FLOATING MENU BUTTON - top right */}
       <button
         type="button"
         onClick={() => setIsSidebarOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer transition z-30"
+        className="fixed top-3 right-3 h-9 w-9 bg-white hover:bg-slate-100 active:scale-95 text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center cursor-pointer transition z-30"
         title="Цэс нээх"
       >
-        <Menu size={24} />
+        <Menu size={17} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] px-1 bg-rose-500 rounded-full text-[9px] flex items-center justify-center font-bold text-white border-2 border-white">
+          <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-0.5 bg-rose-500 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white">
             {unreadCount}
           </span>
         )}
