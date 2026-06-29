@@ -718,7 +718,7 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
 });
 
 // PDF upload: server → signed URL → browser uploads directly to Supabase (Vercel body limit байхгүй)
-app.post('/api/admin/material/signed-url', async (req: Request, res: Response) => {
+app.post('/api/admin/material/upload', async (req: Request, res: Response) => {
   const { fileName } = req.body as { fileName: string };
   if (!fileName) return res.status(400).json({ error: 'Файлын нэр шаардлагатай.' });
 

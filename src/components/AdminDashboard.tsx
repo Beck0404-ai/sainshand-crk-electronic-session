@@ -177,7 +177,7 @@ export default function AdminDashboard({
       setMatUploading(true);
       try {
         // 1. Серверээс signed URL авна (жижиг JSON хүсэлт)
-        const urlRes = await fetch('/api/admin/material/signed-url', {
+        const urlRes = await fetch('/api/admin/material/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: matFile.name })
