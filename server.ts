@@ -47,7 +47,7 @@ async function loadStateFromDB() {
     if (dels?.length) { seedDelegates.length = 0; seedDelegates.push(...dels); }
     if (mtg !== null) serverMeeting = mtg;
     if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
-    if (notifs?.length) serverNotifications = notifs;
+    if (notifs !== null) serverNotifications = notifs ?? [];
     console.log(`DB: ${seedDelegates.length} delegates, meeting: ${serverMeeting?.id ?? 'none'}`);
   } catch (e) {
     console.error('DB load error:', e);
