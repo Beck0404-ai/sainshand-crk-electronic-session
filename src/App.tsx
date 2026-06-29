@@ -97,7 +97,7 @@ export default function App() {
   if (!appState) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-6 font-sans">
-        <Landmark className="text-blue-600 animate-pulse mb-3" size={40} id="loading-landmark" />
+        <img src="/logo.png" alt="ИТХ лого" className="h-20 w-20 object-contain mb-4 animate-pulse" />
         <h2 className="text-sm font-semibold tracking-tight text-slate-700">Сайншанд сумын ИТХ-ын систем</h2>
         <p className="text-[10px] text-slate-400 mt-1 font-mono tracking-wider">СЕРВЕРТЭЙ ХОЛБОГДОЖ БАЙНА...</p>
       </div>
