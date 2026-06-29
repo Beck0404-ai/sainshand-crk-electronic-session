@@ -271,11 +271,34 @@ app.post('/api/admin/meeting/status', (req: Request, res: Response) => {
   if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { status } = req.body; // 'товлогдсон' | 'идэвхтэй' | 'дууссан'
   serverMeeting.status = status;
-  if (status === 'дууссан') {
+  if (status === 'идэвхтэй') {
+    serverNotifications.push({
+      id: `notif-${Date.now()}`,
+      title: '🟢 Хуралдаан эхэллээ',
+      message: `"${serverMeeting.title}" хуралдаан албан ёсоор эхэллээ. Төлөөлөгчид ирцээ бүртгүүлэх боломжтой.`,
+      timestamp: Date.now(),
+      isRead: false
+    });
+  } else if (status === 'дууссан') {
     serverMeeting.attendanceOpen = false;
     serverMeeting.currentSpeaker = null;
     serverMeeting.speakerQueue = [];
     serverMeeting.voting.active = false;
+    serverNotifications.push({
+      id: `notif-${Date.now()}`,
+      title: '🔴 Хуралдаан дууслаа',
+      message: `"${serverMeeting.title}" хуралдаан албан ёсоор өндөрлөлөө. Тайланг татаж авах боломжтой.`,
+      timestamp: Date.now(),
+      isRead: false
+    });
+  } else if (status === 'товлогдсон') {
+    serverNotifications.push({
+      id: `notif-${Date.now()}`,
+      title: '⏸️ Хуралдаан хойшлогдлоо',
+      message: `"${serverMeeting.title}" хуралдааны явц түр хойшлогдлоо.`,
+      timestamp: Date.now(),
+      isRead: false
+    });
   }
   broadcastState();
   res.json({ success: true });
@@ -302,6 +325,13 @@ app.post('/api/admin/voting/start', (req: Request, res: Response) => {
     remainingSeconds: 60,
     duration: 60
   };
+  serverNotifications.push({
+    id: `notif-${Date.now()}`,
+    title: '🗳️ Санал хураалт эхэллээ',
+    message: `"${serverMeeting.voting.title}" — Санал хураалт нээгдлээ. 60 секундын дотор санал өгнө үү.`,
+    timestamp: Date.now(),
+    isRead: false
+  });
   broadcastState();
   res.json({ success: true });
 });
@@ -644,7 +674,6 @@ app.post('/api/admin/delegate/approve', (req: Request, res: Response) => {
     votesCastCount: 0
   };
   seedDelegates.push(newDelegate);
-  serverNotifications.push({ id: `notif-${Date.now()}`, title: 'Шинэ төлөөлөгч бүртгэгдлээ', message: `"${pending.fullName}" нэртэй төлөөлөгч зөвшөөрөгдөж системд нэмэгдлээ.`, timestamp: Date.now(), isRead: false });
   broadcastState();
   res.json({ success: true });
 });
@@ -682,7 +711,6 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
     votesCastCount: 0
   };
   seedDelegates.push(newDelegate);
-  serverNotifications.push({ id: `notif-${Date.now()}`, title: 'Шинэ төлөөлөгч нэмэгдлээ', message: `"${newDelegate.fullName}" нэртэй шинэ төлөөлөгч системд нэмэгдлээ. Анхны нууц үг: 123`, timestamp: Date.now(), isRead: false });
   broadcastState();
   res.json({ success: true });
 });

@@ -354,19 +354,22 @@ export default function AdminDashboard({
     });
 
     // Counts
-    let yes = 0, no = 0;
+    let yes = 0, no = 0, abstain = 0;
     votesArr.forEach(([, value]) => {
       if (value.choice === 'Зөвшөөрсөн') yes++;
       else if (value.choice === 'Татгалзсан') no++;
+      else if (value.choice === 'Түтгэлзсэн') abstain++;
     });
 
-    const total = yes + no;
+    const total = yes + no + abstain;
     const yesPercent = total > 0 ? Math.round((yes / total) * 100) : 0;
     const noPercent = total > 0 ? Math.round((no / total) * 100) : 0;
+    const abstainPercent = total > 0 ? Math.round((abstain / total) * 100) : 0;
 
     content += `---------------------------------------------------------\n`;
     content += `Зөвшөөрсөн: ${yes} (${yesPercent}%)\n`;
     content += `Татгалзсан: ${no} (${noPercent}%)\n`;
+    content += `Түтгэлзсэн: ${abstain} (${abstainPercent}%)\n`;
     content += `Нийт Санал Хураасан: ${total} / ${Object.keys(meeting.attendance).length} хуралдаж буй төлөөлөгч\n`;
 
     // Download Blob action
@@ -697,6 +700,47 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
+                {/* MEETING STATUS CONTROL BOX */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                  <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b pb-2.5 mb-3 flex items-center justify-between">
+                    <span>ХУРАЛДААНЫ ЯВЦ УДИРДАХ</span>
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      meeting.status === 'идэвхтэй' ? 'bg-emerald-100 text-emerald-700' :
+                      meeting.status === 'дууссан'   ? 'bg-slate-100 text-slate-500' :
+                                                       'bg-amber-100 text-amber-700'
+                    }`}>
+                      {meeting.status === 'идэвхтэй' ? '🟢 ЯВАГДАЖ БАЙНА' :
+                       meeting.status === 'дууссан'   ? '⚫ ДУУССАН' : '⏸️ ТОВЛОГДСОН'}
+                    </span>
+                  </h3>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm('Хуралдааныг албан ёсоор эхлүүлэх үү?')) onSetMeetingStatus('идэвхтэй'); }}
+                      disabled={meeting.status === 'идэвхтэй'}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer"
+                    >
+                      🟢 Хуралдаан эхлүүлэх
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm('Хуралдааныг хойшлуулах уу?')) onSetMeetingStatus('товлогдсон'); }}
+                      disabled={meeting.status === 'товлогдсон'}
+                      className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer"
+                    >
+                      ⏸️ Хуралдаан хойшлуулах
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm('Хуралдааныг дуусгах уу? Ирц, санал хураалт, дараалал бүгд хаагдана.')) onSetMeetingStatus('дууссан'); }}
+                      disabled={meeting.status === 'дууссан'}
+                      className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer"
+                    >
+                      🔴 Хуралдаан дуусгах
+                    </button>
+                  </div>
+                </div>
+
                 {/* VOTING CONTROL BOX */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                   <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b pb-2.5 mb-3 flex items-center justify-between">
@@ -712,9 +756,12 @@ export default function AdminDashboard({
                           <div className="text-slate-600 mt-1">{meeting.voting.title}</div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 text-center text-xs font-mono">
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
                           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                             Санал: <strong className="text-rose-600 font-bold">{Object.keys(meeting.voting.votes).length}</strong>/{presentDelegatesCount}
+                          </div>
+                          <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 text-amber-700">
+                            ✋ <strong>{Object.values(meeting.voting.votes).filter(v => v.choice === 'Түтгэлзсэн').length}</strong>
                           </div>
                           {meeting.voting.remainingSeconds !== undefined && (
                             <div className={`p-2.5 rounded-lg border ${
@@ -1424,11 +1471,13 @@ export default function AdminDashboard({
 
               <div className="space-y-3">
                 {[...meeting.votingArchive].reverse().map((item: VotingArchiveItem, idx) => {
-                  const yesIds = Object.entries(item.votes).filter(([, v]) => v.choice === 'Зөвшөөрсөн').map(([id]) => id);
-                  const noIds  = Object.entries(item.votes).filter(([, v]) => v.choice === 'Татгалзсан').map(([id]) => id);
-                  const total  = yesIds.length + noIds.length;
+                  const yesIds     = Object.entries(item.votes).filter(([, v]) => v.choice === 'Зөвшөөрсөн').map(([id]) => id);
+                  const noIds      = Object.entries(item.votes).filter(([, v]) => v.choice === 'Татгалзсан').map(([id]) => id);
+                  const abstainIds = Object.entries(item.votes).filter(([, v]) => v.choice === 'Түтгэлзсэн').map(([id]) => id);
+                  const total  = yesIds.length + noIds.length + abstainIds.length;
                   const yesPct = total > 0 ? Math.round((yesIds.length / total) * 100) : 0;
                   const noPct  = total > 0 ? Math.round((noIds.length  / total) * 100) : 0;
+                  const abstainPct = total > 0 ? Math.round((abstainIds.length / total) * 100) : 0;
                   const passed = yesIds.length > noIds.length;
 
                   return (
@@ -1451,7 +1500,7 @@ export default function AdminDashboard({
                       </div>
 
                       {/* Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 space-y-1">
                           <div className="flex items-center justify-between font-bold text-emerald-700">
                             <span>👍 Зөвшөөрсөн</span>
@@ -1481,6 +1530,22 @@ export default function AdminDashboard({
                               ) : null;
                             })}
                             {noIds.length === 0 && <span className="text-[9px] text-slate-400 italic">Санал өгөөгүй</span>}
+                          </div>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5 space-y-1">
+                          <div className="flex items-center justify-between font-bold text-amber-700">
+                            <span>✋ Түтгэлзсэн</span>
+                            <span className="font-mono">{abstainIds.length} ({abstainPct}%)</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {abstainIds.map(id => {
+                              const d = allDelegates.find(x => x.id === id);
+                              return d ? (
+                                <span key={id} className="text-[9px] bg-white border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{d.fullName}</span>
+                              ) : null;
+                            })}
+                            {abstainIds.length === 0 && <span className="text-[9px] text-slate-400 italic">Санал өгөөгүй</span>}
                           </div>
                         </div>
                       </div>

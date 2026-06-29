@@ -42,6 +42,20 @@ export default function App() {
   const [regSuccess, setRegSuccess] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Restore session from sessionStorage on page load/refresh
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('crkSession');
+      if (saved) {
+        const { role, delegateId } = JSON.parse(saved);
+        if (role) {
+          setCurrentRole(role);
+          setCurrentDelegateId(delegateId || null);
+        }
+      }
+    } catch {}
+  }, []);
+
   // Load state and connect SSE
   useEffect(() => {
     let eventSource: EventSource | null = null;
@@ -99,6 +113,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    sessionStorage.removeItem('crkSession');
     setCurrentRole(null);
     setCurrentDelegateId(null);
     setUsernameInput('');
@@ -124,8 +139,11 @@ export default function App() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setCurrentRole(data.role || null);
-        setCurrentDelegateId(data.delegateId || null);
+        const role = data.role || null;
+        const delegateId = data.delegateId || null;
+        sessionStorage.setItem('crkSession', JSON.stringify({ role, delegateId }));
+        setCurrentRole(role);
+        setCurrentDelegateId(delegateId);
         setUsernameInput('');
         setPasswordInput('');
         setLoginError(null);
@@ -211,7 +229,7 @@ export default function App() {
     });
   };
 
-  const submitVote = async (choice: 'Зөвшөөрсөн' | 'Татгалзсан') => {
+  const submitVote = async (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
     if (!currentDelegateId) return;
     const res = await fetch('/api/vote/submit', {
       method: 'POST',

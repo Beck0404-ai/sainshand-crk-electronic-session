@@ -19,7 +19,7 @@ interface DelegateDashboardProps {
   onRegisterAttendance: () => Promise<void>;
   onJoinSpeakerQueue: () => Promise<void>;
   onLeaveSpeakerQueue: () => Promise<void>;
-  onSubmitVote: (choice: 'Зөвшөөрсөн' | 'Татгалзсан') => Promise<void>;
+  onSubmitVote: (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
   onUpdateProfile: (data: { phone: string; email: string; bio: string }) => Promise<void>;
   onLogout: () => void;
 }
@@ -186,7 +186,7 @@ export default function DelegateDashboard({
                 ℹ️ Сайншанд сумын ИТХ-ын дэгийн дагуу таны өгсөн саналыг бодит хугацаанд заалны том дэлгэцэнд шууд нэгтгэн харуулах тул саналаа нягталж, хариуцлагатай сонголт хийнэ үү.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => onSubmitVote('Зөвшөөрсөн')}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs"
@@ -201,6 +201,14 @@ export default function DelegateDashboard({
                 >
                   <span className="text-base">👎</span>
                   <span>Татгалзсан</span>
+                </button>
+
+                <button
+                  onClick={() => onSubmitVote('Түтгэлзсэн')}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs"
+                >
+                  <span className="text-base">✋</span>
+                  <span>Түтгэлзсэн</span>
                 </button>
               </div>
 
