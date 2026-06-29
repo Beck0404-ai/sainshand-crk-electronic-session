@@ -174,37 +174,23 @@ export default function AdminDashboard({
 
     let uploadedFileUrl: string | undefined;
     if (matFile) {
+      if (matFile.size > 2 * 1024 * 1024) {
+        alert('PDF файл 2MB-аас хэтэрсэн байна. Файлын хэмжээг багасгаад дахин оролдоно уу.');
+        return;
+      }
       setMatUploading(true);
       try {
-        // 1. Серверээс signed URL авна (жижиг JSON хүсэлт)
-        const urlRes = await fetch('/api/admin/material/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: matFile.name })
+        uploadedFileUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Файл унших алдаа'));
+          reader.readAsDataURL(matFile);
         });
-        if (!urlRes.ok) {
-          const errData = await urlRes.json().catch(() => ({})) as { error?: string };
-          throw new Error(errData.error || `Сервер алдаа: HTTP ${urlRes.status}`);
-        }
-        const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; publicUrl: string };
-
-        // 2. Файлыг Vercel дайраалгүй шууд Supabase Storage-руу PUT
-        const uploadRes = await fetch(signedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': matFile.type || 'application/pdf' },
-          body: matFile
-        });
-        if (!uploadRes.ok) {
-          const uploadErr = await uploadRes.text().catch(() => '');
-          throw new Error(`Storage алдаа ${uploadRes.status}: ${uploadErr.substring(0, 100)}`);
-        }
-
-        uploadedFileUrl = publicUrl;
         const fileSizeKB = Math.round(matFile.size / 1024);
         if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
         else setMatSize(`${fileSizeKB} KB`);
       } catch (err: unknown) {
-        alert((err instanceof Error ? err.message : null) || 'PDF файл байршуулахад алдаа гарлаа.');
+        alert((err instanceof Error ? err.message : null) || 'Файл уншиж чадсангүй.');
         setMatUploading(false);
         return;
       }
