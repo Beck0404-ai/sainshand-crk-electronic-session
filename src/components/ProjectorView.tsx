@@ -33,24 +33,23 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
 
   const yesVotesList: Delegate[] = [];
   const noVotesList: Delegate[] = [];
+  const abstainVotesList: Delegate[] = [];
 
   delegates.forEach(d => {
-    // Check if check-in first (only present can vote on active trials)
     if (meeting?.attendance[d.id]) {
       const voteItem = votes[d.id];
       if (voteItem) {
-        if (voteItem.choice === 'Зөвшөөрсөн') {
-          yesVotesList.push(d);
-        } else if (voteItem.choice === 'Татгалзсан') {
-          noVotesList.push(d);
-        }
+        if (voteItem.choice === 'Зөвшөөрсөн') yesVotesList.push(d);
+        else if (voteItem.choice === 'Татгалзсан') noVotesList.push(d);
+        else if (voteItem.choice === 'Түтгэлзсэн') abstainVotesList.push(d);
       }
     }
   });
 
-  const totalVotesCount = yesVotesList.length + noVotesList.length;
+  const totalVotesCount = yesVotesList.length + noVotesList.length + abstainVotesList.length;
   const yesPercent = totalVotesCount > 0 ? Math.round((yesVotesList.length / totalVotesCount) * 100) : 0;
   const noPercent = totalVotesCount > 0 ? Math.round((noVotesList.length / totalVotesCount) * 100) : 0;
+  const abstainPercent = totalVotesCount > 0 ? Math.round((abstainVotesList.length / totalVotesCount) * 100) : 0;
 
   // Format timer
   const formatSeconds = (totalSecs: number) => {
@@ -293,9 +292,26 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
                         <div className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" style={{ width: `${noPercent}%` }}></div>
                       </div>
 
-                      {/* Moving/Scrolling Names */}
                       <div className="pt-1">
                         {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', 'Татгалзсан')}
+                      </div>
+                    </div>
+
+                    {/* ABSTAIN STAT */}
+                    <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                          ✋ Түтгэлзсэн: {abstainVotesList.length} төлөөлөгч
+                        </span>
+                        <span className="text-2xl font-mono font-black text-amber-400">{abstainPercent}%</span>
+                      </div>
+
+                      <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
+                        <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]" style={{ width: `${abstainPercent}%` }}></div>
+                      </div>
+
+                      <div className="pt-1">
+                        {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', 'Түтгэлзсэн')}
                       </div>
                     </div>
 
@@ -308,14 +324,17 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
                   const last = meeting.votingArchive[meeting.votingArchive.length - 1];
                   const lastYes: Delegate[] = [];
                   const lastNo: Delegate[] = [];
+                  const lastAbstain: Delegate[] = [];
                   delegates.forEach(d => {
                     const v = last.votes[d.id];
                     if (v?.choice === 'Зөвшөөрсөн') lastYes.push(d);
                     else if (v?.choice === 'Татгалзсан') lastNo.push(d);
+                    else if (v?.choice === 'Түтгэлзсэн') lastAbstain.push(d);
                   });
-                  const lastTotal = lastYes.length + lastNo.length;
+                  const lastTotal = lastYes.length + lastNo.length + lastAbstain.length;
                   const lastYesPct = lastTotal > 0 ? Math.round((lastYes.length / lastTotal) * 100) : 0;
                   const lastNoPct = lastTotal > 0 ? Math.round((lastNo.length / lastTotal) * 100) : 0;
+                  const lastAbstainPct = lastTotal > 0 ? Math.round((lastAbstain.length / lastTotal) * 100) : 0;
                   const passed = lastYes.length > lastNo.length;
 
                   return (
@@ -380,6 +399,25 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
                           </div>
                         </div>
 
+                        {/* ABSTAIN block */}
+                        <div className="bg-blue-950/40 rounded-xl border border-blue-900/40 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-400 font-bold text-xs uppercase tracking-wide">✋ Түтгэлзсэн — {lastAbstain.length} төлөөлөгч</span>
+                            <span className="text-2xl font-mono font-black text-amber-400">{lastAbstainPct}%</span>
+                          </div>
+                          <div className="h-3 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60">
+                            <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" style={{ width: `${lastAbstainPct}%` }}></div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {lastAbstain.length === 0
+                              ? <span className="text-[10px] text-blue-300/40 italic">Санал өгөөгүй</span>
+                              : lastAbstain.map(d => (
+                                <span key={d.id} className="text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full font-bold">{d.fullName}</span>
+                              ))
+                            }
+                          </div>
+                        </div>
+
                         {/* Archive count */}
                         {meeting.votingArchive.length > 1 && (
                           <div className="text-center text-[9px] text-blue-400/60 font-mono">
@@ -436,9 +474,10 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
                   {delegates.map((d, index) => {
                     const isPresent = meeting ? !!meeting.attendance[d.id] : false;
                     const didVote = isVotingActive ? !!votes[d.id] : false;
-                    let voteColor = 'bg-emerald-500 text-white'; // yes
-                    if (votes[d.id]?.choice === 'Татгалзсан') voteColor = 'bg-rose-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-                    else if (votes[d.id]?.choice === 'Зөвшөөрсөн') voteColor = 'bg-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+                    let voteColor = 'bg-blue-800/40 text-blue-400';
+                    if (votes[d.id]?.choice === 'Зөвшөөрсөн') voteColor = 'bg-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+                    else if (votes[d.id]?.choice === 'Татгалзсан') voteColor = 'bg-rose-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]';
+                    else if (votes[d.id]?.choice === 'Түтгэлзсэн') voteColor = 'bg-amber-500 text-white shadow-[0_0_8px_rgba(245,158,11,0.5)]';
 
                     return (
                       <div 
@@ -476,6 +515,10 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
                     <div className="flex items-center gap-1.5">
                       <div className="h-2.5 w-2.5 bg-rose-500 rounded-sm"></div>
                       <span>Татгалзсан (Сонголт)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 bg-amber-500 rounded-sm"></div>
+                      <span>Түтгэлзсэн (Сонголт)</span>
                     </div>
                   </div>
                 )}
