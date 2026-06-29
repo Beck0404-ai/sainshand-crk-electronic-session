@@ -8,7 +8,6 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import multer from 'multer';
 import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
 import { dbLoad, dbSave, dbClearAll, getSupabaseClient } from './src/db.js';
 
@@ -21,8 +20,6 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// PDF file uploads — Supabase Storage (works on Vercel serverless)
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 // Preseeded list of 29 delegates of Sainshand Soum
 const seedDelegates: any[] = [];
@@ -720,28 +717,27 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// PDF file upload endpoint — Supabase Storage
-app.post('/api/admin/material/upload', upload.single('file'), async (req: Request, res: Response) => {
-  if (!req.file) return res.status(400).json({ error: 'Файл байхгүй байна.' });
+// PDF upload: server returns signed URL → browser uploads directly to Supabase Storage
+app.post('/api/admin/material/signed-url', async (req: Request, res: Response) => {
+  const { fileName } = req.body as { fileName: string };
+  if (!fileName) return res.status(400).json({ error: 'Файлын нэр хэрэгтэй.' });
+
   const supabase = getSupabaseClient();
-  if (!supabase) return res.status(500).json({ error: 'Supabase тохиргоо хийгдээгүй байна.' });
+  if (!supabase) return res.status(500).json({ error: 'Supabase тохиргоо байхгүй.' });
 
-  const safeName = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+  const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
 
-  // Bucket байхгүй бол үүсгэнэ
   await supabase.storage.createBucket('materials', { public: true }).catch(() => {});
 
-  const { error } = await supabase.storage
-    .from('materials')
-    .upload(safeName, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+  const { data, error } = await supabase.storage.from('materials').createSignedUploadUrl(safeName);
 
-  if (error) {
-    console.error('Storage upload error:', error);
-    return res.status(500).json({ error: `Файл хадгалахад алдаа: ${error.message}` });
+  if (error || !data) {
+    console.error('Signed URL error:', error);
+    return res.status(500).json({ error: error?.message || 'URL үүсгэхэд алдаа гарлаа.' });
   }
 
   const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(safeName);
-  res.json({ success: true, fileUrl: publicUrl, originalName: req.file.originalname, size: req.file.size });
+  res.json({ signedUrl: data.signedUrl, publicUrl });
 });
 
 // Reset entire system back to clean empty state (Admin Tool)

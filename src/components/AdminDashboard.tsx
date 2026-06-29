@@ -176,17 +176,32 @@ export default function AdminDashboard({
     if (matFile) {
       setMatUploading(true);
       try {
-        const form = new FormData();
-        form.append('file', matFile);
-        const res = await fetch('/api/admin/material/upload', { method: 'POST', body: form });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        uploadedFileUrl = data.fileUrl;
+        // Серверээс signed URL авна
+        const urlRes = await fetch('/api/admin/material/signed-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: matFile.name })
+        });
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({})) as { error?: string };
+          throw new Error(err.error || 'Signed URL авахад алдаа.');
+        }
+        const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; publicUrl: string };
+
+        // Browser-аас шууд Supabase Storage-руу upload
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': matFile.type || 'application/octet-stream' },
+          body: matFile
+        });
+        if (!uploadRes.ok) throw new Error('Supabase Storage upload амжилтгүй.');
+
+        uploadedFileUrl = publicUrl;
         const fileSizeKB = Math.round(matFile.size / 1024);
         if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
         else setMatSize(`${fileSizeKB} KB`);
-      } catch {
-        alert('PDF файл байршуулахад алдаа гарлаа.');
+      } catch (err: unknown) {
+        alert((err instanceof Error ? err.message : null) || 'PDF файл байршуулахад алдаа гарлаа.');
         setMatUploading(false);
         return;
       }
