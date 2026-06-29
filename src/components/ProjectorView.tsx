@@ -5,15 +5,16 @@
 
 import React from 'react';
 import { Delegate, CRKMeeting } from '../types.js';
-import { User, Users, Clock, Vote, CheckCircle, Award, BookOpen, AlertCircle } from 'lucide-react';
+import { User, Users, Clock, Vote, AlertCircle, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ProjectorViewProps {
   meeting: CRKMeeting | null;
   delegates: Delegate[];
+  onBackToAdmin: () => void;
 }
 
-export default function ProjectorView({ meeting, delegates }: ProjectorViewProps) {
+export default function ProjectorView({ meeting, delegates, onBackToAdmin }: ProjectorViewProps) {
   // Aggregate statistics
   const presentCount = meeting ? Object.keys(meeting.attendance).length : 0;
   const totalCount = delegates.length;
@@ -126,18 +127,29 @@ export default function ProjectorView({ meeting, delegates }: ProjectorViewProps
           </div>
         </div>
 
-        {meeting && (
-          <div className="bg-[#0b162c] border border-blue-800/80 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg shadow-black/30">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <div className="text-right">
-              <span className="text-[8px] text-blue-400 block uppercase font-mono tracking-wider font-extrabold">ИТДЭВХТЭЙ ХЭЛЭЛЦҮҮЛЭГ</span>
-              <span className="text-xs font-bold text-slate-100">{meeting.title}</span>
+        <div className="flex items-center gap-3">
+          {meeting && (
+            <div className="bg-[#0b162c] border border-blue-800/80 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg shadow-black/30">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <div className="text-right">
+                <span className="text-[8px] text-blue-400 block uppercase font-mono tracking-wider font-extrabold">ИТДЭВХТЭЙ ХЭЛЭЛЦҮҮЛЭГ</span>
+                <span className="text-xs font-bold text-slate-100">{meeting.title}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={onBackToAdmin}
+            className="flex items-center gap-2 bg-blue-900/60 hover:bg-blue-800/80 border border-blue-700/60 text-blue-200 hover:text-white text-[11px] font-bold px-3.5 py-2.5 rounded-xl transition cursor-pointer"
+            title="Админ хэсэгрүү буцах"
+          >
+            <LayoutDashboard size={14} />
+            Админ хэсэг
+          </button>
+        </div>
       </div>
 
       {/* CORE BENTO GRID */}

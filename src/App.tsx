@@ -697,6 +697,7 @@ export default function App() {
           <ProjectorView
             meeting={meeting}
             delegates={delegates}
+            onBackToAdmin={() => handleRoleChange('admin', null)}
           />
         )}
       </main>
