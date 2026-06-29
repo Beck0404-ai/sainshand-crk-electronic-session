@@ -48,6 +48,9 @@ export default function DelegateDashboard({
   const [profileEmail, setProfileEmail] = useState(delegate.email);
   const [profileBio, setProfileBio] = useState(delegate.bio || '');
 
+  // PDF viewer modal
+  const [pdfViewer, setPdfViewer] = useState<AgendaMaterial | null>(null);
+
   // Track downloaded simulated files to mock "таж авах"
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
   const [readMaterialIds, setReadMaterialIds] = useState<string[]>([]);
@@ -137,7 +140,57 @@ export default function DelegateDashboard({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6" id="delegate-screen-area">
-      
+
+      {/* PDF VIEWER MODAL */}
+      <AnimatePresence>
+        {pdfViewer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/80 z-[60] flex flex-col backdrop-blur-sm"
+          >
+            {/* Modal header */}
+            <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`h-7 w-7 rounded flex items-center justify-center font-bold text-[8px] uppercase flex-shrink-0 text-white ${
+                  pdfViewer.fileType === 'pdf' ? 'bg-rose-500' : pdfViewer.fileType === 'docx' ? 'bg-indigo-500' : 'bg-emerald-500'
+                }`}>
+                  {pdfViewer.fileType}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">{pdfViewer.title}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">{pdfViewer.fileSize}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPdfViewer(null)}
+                className="flex-shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2 rounded-lg cursor-pointer transition flex items-center gap-1.5"
+              >
+                ✕ Хаах
+              </button>
+            </div>
+
+            {/* PDF iframe */}
+            <div className="flex-1 overflow-hidden">
+              {pdfViewer.fileUrl ? (
+                <iframe
+                  src={pdfViewer.fileUrl}
+                  className="w-full h-full border-0"
+                  title={pdfViewer.title}
+                  allowFullScreen
+                />
+              ) : (
+                <div className="h-full overflow-y-auto bg-white p-8 max-w-3xl mx-auto">
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{pdfViewer.contentSummary}</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ACTIVE VOTING POPUP MODAL (HIGHEST PRIORITY / REAL-TIME RESPONSE) */}
       <AnimatePresence>
         {meeting?.voting.active && isCheckedIn && !hasVoted && (
@@ -581,7 +634,7 @@ export default function DelegateDashboard({
                                       {activeAgenda.materials.map(mat => {
                                         const isDownloaded = downloadedIds.includes(mat.id);
                                         return (
-                                          <div key={mat.id} className="bg-white border border-slate-250 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                                          <div key={mat.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
                                             {/* File header bar */}
                                             <div className="bg-slate-100/80 px-3.5 py-2.5 border-b border-slate-200 flex items-center justify-between gap-2">
                                               <div className="flex items-center gap-2 truncate">
@@ -595,13 +648,21 @@ export default function DelegateDashboard({
                                                   <p className="text-[9px] text-slate-400 font-mono italic">{mat.fileSize}</p>
                                                 </div>
                                               </div>
-                                              <div className="flex items-center gap-1.5">
-                                                <span className="text-[8px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
-                                                  Нээлттэй
-                                                </span>
+                                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                {mat.fileUrl && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setPdfViewer(mat)}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer text-[10px] font-bold shadow-sm"
+                                                  >
+                                                    <FileText size={11} />
+                                                    Нээж үзэх
+                                                  </button>
+                                                )}
                                                 <button
+                                                  type="button"
                                                   onClick={() => triggerSimulatedDownload(mat)}
-                                                  className="hover:bg-blue-100 text-blue-700 bg-blue-50 border border-blue-150 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer text-[10px] font-bold shadow-sm"
+                                                  className="hover:bg-slate-200 text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer text-[10px] font-bold"
                                                   title="Файл татах"
                                                 >
                                                   <Download size={11} />
@@ -610,12 +671,30 @@ export default function DelegateDashboard({
                                               </div>
                                             </div>
 
-                                            {/* Document Body View (directly read and open!) */}
-                                            <div className="p-3.5 bg-slate-50/50 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap font-sans border-b border-dashed border-slate-150">
-                                              {mat.contentSummary}
-                                            </div>
-                                            
-                                            {/* Beautiful footer decoration symbolizing full paper view */}
+                                            {/* Content: if fileUrl show open prompt, else show summary */}
+                                            {mat.fileUrl ? (
+                                              <button
+                                                type="button"
+                                                onClick={() => setPdfViewer(mat)}
+                                                className="p-4 bg-blue-50/60 hover:bg-blue-50 text-left transition cursor-pointer group border-b border-slate-100"
+                                              >
+                                                <div className="flex items-center gap-3">
+                                                  <div className="h-10 w-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <FileText size={20} className="text-rose-500" />
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-xs font-bold text-slate-700 group-hover:text-blue-700 transition">Файлыг нээж үзэх</p>
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">Дарж PDF баримтыг шууд энэ хуудсанд нээнэ</p>
+                                                  </div>
+                                                  <ArrowRight size={16} className="text-blue-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                              </button>
+                                            ) : (
+                                              <div className="p-3.5 bg-slate-50/50 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap font-sans border-b border-dashed border-slate-150">
+                                                {mat.contentSummary}
+                                              </div>
+                                            )}
+
                                             <div className="bg-white p-2 text-center text-[8.5px] text-slate-400 font-mono flex items-center justify-center gap-1 border-t border-slate-100">
                                               <span>📄 Баримтын төгсгөл</span>
                                             </div>

@@ -85,6 +85,7 @@ export default function AdminDashboard({
   const [matType, setMatType] = useState<'pdf' | 'docx' | 'xlsx'>('pdf');
   const [matSize, setMatSize] = useState('2.4 MB');
   const [matContent, setMatContent] = useState('');
+  const [matUrl, setMatUrl] = useState('');
 
   // Voting setup inputs
   const [votingTitle, setVotingTitle] = useState('Сайншанд сумын төсвийн тодотголыг дэмжих эсэх санал хураалт');
@@ -176,15 +177,15 @@ export default function AdminDashboard({
         title: matTitle,
         fileType: matType,
         fileSize: matSize,
-        contentSummary: matContent || 'Орон нутгийн танилцуулга материал.'
+        contentSummary: matContent || 'Орон нутгийн танилцуулга материал.',
+        fileUrl: matUrl.trim() || undefined
       };
       setPendingMaterials(prev => ({
         ...prev,
         [selectedAgendaForMat]: [...(prev[selectedAgendaForMat] || []), mat]
       }));
       showToast('Материал хуралдаан үүсэхэд нэмэгдэнэ.');
-      setMatTitle('');
-      setMatContent('');
+      setMatTitle(''); setMatContent(''); setMatUrl('');
       return;
     }
     try {
@@ -192,11 +193,11 @@ export default function AdminDashboard({
         title: matTitle,
         fileType: matType,
         fileSize: matSize,
-        contentSummary: matContent || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах заалт уншлага.'
+        contentSummary: matContent || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах заалт уншлага.',
+        fileUrl: matUrl.trim() || undefined
       });
       showToast('Файл амжилттай хавсаргагдлаа.');
-      setMatTitle('');
-      setMatContent('');
+      setMatTitle(''); setMatContent(''); setMatUrl('');
     } catch (e) {
       alert('Материал хавсаргахад алдаа гарлаа.');
     }
@@ -1376,14 +1377,29 @@ export default function AdminDashboard({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-655 mb-1">Материалын товч агуулга хураангуй</label>
+                  <label className="block font-bold text-slate-655 mb-1">
+                    PDF/Файлын холбоос (URL) <span className="text-slate-400 font-normal">— Google Drive, OneDrive гэх мэт</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={matUrl}
+                    onChange={(e) => setMatUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/.../preview"
+                    className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    💡 Google Drive: файл нээгээд Share → Copy link → URL-ийн <code className="bg-slate-100 px-1 rounded">/view</code>-г <code className="bg-slate-100 px-1 rounded">/preview</code> болгоно уу
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-655 mb-1">Товч агуулга хураангуй <span className="text-slate-400 font-normal">(URL байхгүй үед харуулна)</span></label>
                   <textarea
                     value={matContent}
                     onChange={(e) => setMatContent(e.target.value)}
-                    rows={4}
+                    rows={3}
                     className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none resize-none"
                     placeholder="Энэхүү сургалтын төсөл нь Сайншанд багийн залуусыг бэлтгэхэд зориулсан бодит төсөвт төлөвлөгөө юм ..."
-                    required
                   />
                 </div>
 

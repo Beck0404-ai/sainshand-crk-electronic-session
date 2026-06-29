@@ -23,7 +23,8 @@ export interface AgendaMaterial {
   title: string;
   fileType: 'pdf' | 'docx' | 'xlsx';
   fileSize: string;
-  contentSummary: string; // Real or simulated read-only content text
+  contentSummary: string;
+  fileUrl?: string; // Google Drive preview link or direct PDF URL
 }
 
 export interface AgendaItem {

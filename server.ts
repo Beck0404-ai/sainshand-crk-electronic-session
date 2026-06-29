@@ -238,7 +238,8 @@ app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
       title: material.title || 'Шинэ Танилцуулга Бусад.pdf',
       fileType: material.fileType || 'pdf',
       fileSize: material.fileSize || '1.2 MB',
-      contentSummary: material.contentSummary || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах.'
+      contentSummary: material.contentSummary || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах.',
+      fileUrl: material.fileUrl || undefined
     };
     agendaItem.materials.push(newMaterial);
     
