@@ -446,99 +446,10 @@ export default function DelegateDashboard({
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-        {/* SIDEBAR COL_SPAN_4 */}
-        <div className="lg:col-span-4 space-y-5">
-
-          {/* Drawer open button */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen(true)}
-              className="relative h-9 w-9 bg-white border border-slate-200 shadow-sm rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
-              title="Цэс нээх"
-            >
-              <Menu size={16} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* ATTENDANCE */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-            <h4 className="font-bold text-slate-900 text-xs mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <CheckSquare size={14} className="text-blue-600" /> Ирц бүртгэл
-            </h4>
-            {!meeting ? (
-              <p className="text-xs text-slate-500">Холбогдох идэвхтэй хурал олдсонгүй.</p>
-            ) : isCheckedIn ? (
-              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex items-center gap-2.5">
-                <CheckCircle className="text-emerald-500 flex-shrink-0" size={20} />
-                <div>
-                  <div className="text-xs font-bold text-emerald-800">Ирц баталгаажсан</div>
-                  <div className="text-[9px] text-emerald-600 font-mono mt-0.5 font-semibold">
-                    Бүртгэсэн: {new Date(meeting.attendance[delegate.id]).toLocaleTimeString()}
-                  </div>
-                </div>
-              </div>
-            ) : meeting.attendanceOpen ? (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500 leading-relaxed">Ирцийн бүртгэл нээлттэй байна. Товчийг дарж ирцээ баталгаажуулна уу.</p>
-                <button type="button" onClick={onRegisterAttendance}
-                  className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer text-xs">
-                  <CheckCircle size={15} /> Ирц Бүртгүүлэх
-                </button>
-              </div>
-            ) : (
-              <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-center">
-                <AlertTriangle className="text-slate-400 mx-auto mb-1" size={16} />
-                <div className="text-xs font-semibold text-slate-600">Ирц бүртгэл хаагдсан</div>
-                <div className="text-[10px] text-slate-400 mt-1">Хуралдааны ирц нээхийг хүлээж байна.</div>
-              </div>
-            )}
-          </div>
-
-          {/* ACTIVE SPEAKER TIMER */}
-          {meeting && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-              <h4 className="text-[9px] text-blue-600 font-mono font-bold uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Clock size={12} className="animate-pulse" /> Үг хэлж буй төлөөлөгч
-              </h4>
-              {meeting.currentSpeaker ? (
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center font-bold text-xs uppercase shadow-sm">
-                      {activeSpeakerDelegate ? activeSpeakerDelegate.fullName.substring(0, 3) : '...'}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">{activeSpeakerDelegate?.fullName || 'Тодорхойгүй'}</div>
-                      <div className="text-[9px] text-slate-400 font-mono font-semibold">{meeting.currentSpeaker.turn} дэх удаа асуулт</div>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 px-4 py-3.5 rounded-xl border border-slate-200 text-center relative">
-                    <div className={`text-4xl font-mono font-bold tracking-widest ${meeting.currentSpeaker.remainingSeconds <= 30 ? 'text-rose-600 animate-pulse' : 'text-slate-800'}`}>
-                      {formatSeconds(meeting.currentSpeaker.remainingSeconds)}
-                    </div>
-                    <div className="text-[9px] text-slate-400 mt-1">Үлдсэн хугацаа</div>
-                    {meeting.currentSpeaker.isPaused && (
-                      <span className="absolute top-2 right-2 bg-amber-50 text-amber-700 text-[8px] font-bold px-1 py-0.5 rounded uppercase border border-amber-200">Түр зогссон</span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4 text-slate-400 text-xs">Одоогоор үг хэлж буй төлөөлөгч байхгүй.</div>
-              )}
-            </div>
-          )}
-
-        </div>
-
-        {/* MAIN AREA COL_SPAN_8 */}
-        <div className="lg:col-span-8 space-y-5">
+        {/* MAIN AREA COL_SPAN_9 */}
+        <div className="lg:col-span-9 space-y-5">
 
           {/* VOTED BANNER */}
           {meeting?.voting.active && hasVoted && (
@@ -796,8 +707,93 @@ export default function DelegateDashboard({
           )}
 
         </div>
-      </div>
 
+        {/* RIGHT SIDEBAR COL_SPAN_3 — жижиг */}
+        <div className="lg:col-span-3 space-y-3">
+
+          {/* Drawer товч */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="relative h-8 w-8 bg-white border border-slate-200 shadow-sm rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+              title="Цэс нээх"
+            >
+              <Menu size={15} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* ИРЦИЙН БҮРТГЭЛ — жижиг */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3">
+            <h4 className="font-bold text-slate-700 text-[10px] mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+              <CheckSquare size={11} className="text-blue-600" /> Ирц бүртгэл
+            </h4>
+            {!meeting ? (
+              <p className="text-[10px] text-slate-400">Хурал олдсонгүй.</p>
+            ) : isCheckedIn ? (
+              <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center gap-2">
+                <CheckCircle className="text-emerald-500 flex-shrink-0" size={15} />
+                <div>
+                  <div className="text-[10px] font-bold text-emerald-800">Баталгаажсан</div>
+                  <div className="text-[8px] text-emerald-600 font-mono mt-0.5">
+                    {new Date(meeting.attendance[delegate.id]).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            ) : meeting.attendanceOpen ? (
+              <button type="button" onClick={onRegisterAttendance}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer text-[10px]">
+                <CheckCircle size={11} /> Бүртгүүлэх
+              </button>
+            ) : (
+              <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-center">
+                <AlertTriangle className="text-slate-300 mx-auto mb-1" size={13} />
+                <div className="text-[9px] font-semibold text-slate-500">Бүртгэл хаагдсан</div>
+              </div>
+            )}
+          </div>
+
+          {/* ҮГ ХЭЛЖ БУЙ — жижиг */}
+          {meeting && (
+            <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+              <h4 className="text-[8px] text-blue-600 font-mono font-bold uppercase tracking-widest mb-2 flex items-center gap-1">
+                <Clock size={10} className="animate-pulse" /> Үг хэлж буй
+              </h4>
+              {meeting.currentSpeaker ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center font-bold text-[9px] uppercase flex-shrink-0">
+                      {activeSpeakerDelegate ? activeSpeakerDelegate.fullName.substring(0, 3) : '...'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 text-[10px] truncate">{activeSpeakerDelegate?.fullName || 'Тодорхойгүй'}</div>
+                      <div className="text-[8px] text-slate-400 font-mono">{meeting.currentSpeaker.turn}-р асуулт</div>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 py-2.5 rounded-lg border border-slate-200 text-center relative">
+                    <div className={`text-2xl font-mono font-bold tracking-widest ${meeting.currentSpeaker.remainingSeconds <= 30 ? 'text-rose-600 animate-pulse' : 'text-slate-800'}`}>
+                      {formatSeconds(meeting.currentSpeaker.remainingSeconds)}
+                    </div>
+                    <div className="text-[8px] text-slate-400 mt-0.5">Үлдсэн</div>
+                    {meeting.currentSpeaker.isPaused && (
+                      <span className="absolute top-1 right-1 bg-amber-50 text-amber-700 text-[7px] font-bold px-1 py-0.5 rounded border border-amber-200">Зогссон</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-3 text-slate-400 text-[10px]">Одоогоор байхгүй.</div>
+              )}
+            </div>
+          )}
+
+        </div>
+
+      </div>
 
     </div>
   );
