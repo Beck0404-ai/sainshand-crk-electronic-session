@@ -30,7 +30,7 @@ async function loadStateFromDB() {
     if (dels?.length) { seedDelegates.length = 0; seedDelegates.push(...dels); }
     if (mtg !== null) serverMeeting = mtg;
     if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
-    if (notifs?.length) serverNotifications = notifs;
+    if (notifs !== null) serverNotifications = notifs ?? [];
   } catch (e) {
     console.error('DB load error:', e);
   }
@@ -459,6 +459,13 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
     timestamp: Date.now(),
     isRead: false
   });
+  broadcastState();
+  res.json({ success: true });
+});
+
+app.post('/api/admin/notifications/clear', async (_req: Request, res: Response) => {
+  serverNotifications = [];
+  await dbSave('notifications', serverNotifications);
   broadcastState();
   res.json({ success: true });
 });
