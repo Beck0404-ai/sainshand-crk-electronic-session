@@ -451,28 +451,22 @@ export default function DelegateDashboard({
         {/* SIDEBAR COL_SPAN_4 */}
         <div className="lg:col-span-4 space-y-5">
 
-          {/* PROFILE CARD - compact, opens drawer */}
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(true)}
-            className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-3 hover:bg-slate-50 active:scale-[0.99] transition cursor-pointer text-left relative"
-          >
-            <div className="h-11 w-11 rounded-xl bg-blue-600 text-white font-bold text-sm flex items-center justify-center shadow-sm flex-shrink-0">
-              {delegate.fullName.substring(0, 3)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] text-slate-400 font-mono uppercase tracking-wider">Тойрог: {delegate.district.split(' ')[0]}</p>
-              <p className="font-bold text-slate-900 text-sm leading-tight mt-0.5 truncate">{delegate.fullName}</p>
-            </div>
-            <div className="flex-shrink-0 relative">
-              <Menu size={16} className="text-slate-400" />
+          {/* Drawer open button */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="relative h-9 w-9 bg-white border border-slate-200 shadow-sm rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+              title="Цэс нээх"
+            >
+              <Menu size={16} />
               {unreadCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[14px] px-0.5 bg-rose-500 rounded-full text-[7px] flex items-center justify-center font-bold text-white border border-white">
                   {unreadCount}
                 </span>
               )}
-            </div>
-          </button>
+            </button>
+          </div>
 
           {/* ATTENDANCE */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
