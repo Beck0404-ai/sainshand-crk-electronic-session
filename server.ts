@@ -18,7 +18,7 @@ const _dirname = isCjs ? __dirname : path.dirname(_filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '6mb' }));
 
 
 // Preseeded list of 29 delegates of Sainshand Soum
@@ -717,27 +717,44 @@ app.post('/api/admin/delegate/add', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-// PDF upload: server returns signed URL → browser uploads directly to Supabase Storage
-app.post('/api/admin/material/signed-url', async (req: Request, res: Response) => {
-  const { fileName } = req.body as { fileName: string };
-  if (!fileName) return res.status(400).json({ error: 'Файлын нэр хэрэгтэй.' });
+// PDF upload: base64 JSON → Supabase Storage REST API (Vercel-д ажиллана)
+app.post('/api/admin/material/upload', async (req: Request, res: Response) => {
+  const { fileName, mimeType, data } = req.body as { fileName: string; mimeType: string; data: string };
+  if (!data || !fileName) return res.status(400).json({ error: 'Файл байхгүй байна.' });
 
-  const supabase = getSupabaseClient();
-  if (!supabase) return res.status(500).json({ error: 'Supabase тохиргоо байхгүй.' });
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return res.status(500).json({ error: 'Supabase тохиргоо байхгүй.' });
 
+  const buffer = Buffer.from(data, 'base64');
   const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
 
-  await supabase.storage.createBucket('materials', { public: true }).catch(() => {});
+  // Bucket үүсгэх (байгаа бол алдааг үл тоо)
+  await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'materials', name: 'materials', public: true })
+  }).catch(() => {});
 
-  const { data, error } = await supabase.storage.from('materials').createSignedUploadUrl(safeName);
+  // Файлыг Supabase Storage REST API-аар шууд upload
+  const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/materials/${safeName}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': mimeType || 'application/pdf',
+      'x-upsert': 'true'
+    },
+    body: buffer
+  });
 
-  if (error || !data) {
-    console.error('Signed URL error:', error);
-    return res.status(500).json({ error: error?.message || 'URL үүсгэхэд алдаа гарлаа.' });
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text();
+    console.error('Storage error:', errText);
+    return res.status(500).json({ error: `Storage алдаа (${uploadRes.status}): ${errText.substring(0, 120)}` });
   }
 
-  const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(safeName);
-  res.json({ signedUrl: data.signedUrl, publicUrl });
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/materials/${safeName}`;
+  res.json({ success: true, fileUrl: publicUrl });
 });
 
 // Reset entire system back to clean empty state (Admin Tool)

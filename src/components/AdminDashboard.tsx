@@ -174,29 +174,30 @@ export default function AdminDashboard({
 
     let uploadedFileUrl: string | undefined;
     if (matFile) {
+      if (matFile.size > 4 * 1024 * 1024) {
+        alert('Файл 4MB-аас хэтэрсэн байна. Жижиг файл ашиглана уу.');
+        return;
+      }
       setMatUploading(true);
       try {
-        // Серверээс signed URL авна
-        const urlRes = await fetch('/api/admin/material/signed-url', {
+        // Файлыг base64 болгож JSON-оор сервер рүү илгээнэ
+        const arrayBuffer = await matFile.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+
+        const res = await fetch('/api/admin/material/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: matFile.name })
+          body: JSON.stringify({ fileName: matFile.name, mimeType: matFile.type || 'application/pdf', data: base64 })
         });
-        if (!urlRes.ok) {
-          const err = await urlRes.json().catch(() => ({})) as { error?: string };
-          throw new Error(err.error || 'Signed URL авахад алдаа.');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({})) as { error?: string };
+          throw new Error(err.error || 'Upload амжилтгүй.');
         }
-        const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; publicUrl: string };
-
-        // Browser-аас шууд Supabase Storage-руу upload
-        const uploadRes = await fetch(signedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': matFile.type || 'application/octet-stream' },
-          body: matFile
-        });
-        if (!uploadRes.ok) throw new Error('Supabase Storage upload амжилтгүй.');
-
-        uploadedFileUrl = publicUrl;
+        const result = await res.json() as { fileUrl: string };
+        uploadedFileUrl = result.fileUrl;
         const fileSizeKB = Math.round(matFile.size / 1024);
         if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
         else setMatSize(`${fileSizeKB} KB`);
