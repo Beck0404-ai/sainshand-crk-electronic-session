@@ -1418,7 +1418,11 @@ export default function AdminDashboard({
                       type="file"
                       accept=".pdf,.docx,.xlsx"
                       title="PDF, Word, Excel файл сонгох"
-                      onChange={(e) => setMatFile(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setMatFile(file);
+                        if (file && !matTitle) setMatTitle(file.name);
+                      }}
                       className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs cursor-pointer file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                   </div>
@@ -1451,6 +1455,35 @@ export default function AdminDashboard({
               </form>
             ) : (
               <p className="text-slate-400 italic text-center py-6">Эхлээд идэвхтэй хурал үүсгэнэ үү.</p>
+            )}
+
+            {/* Uploaded materials list */}
+            {meeting && meeting.agenda.some(ag => ag.materials.length > 0) && (
+              <div className="border-t border-slate-100 pt-4 mt-2 space-y-3">
+                <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Байршуулсан материалууд</h5>
+                {meeting.agenda.map(ag => ag.materials.length > 0 && (
+                  <div key={ag.id}>
+                    <p className="text-[10px] font-semibold text-slate-600 mb-1.5 truncate">{ag.title}</p>
+                    <div className="space-y-1.5">
+                      {ag.materials.map(mat => (
+                        <div key={mat.id} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                          <FileCheck size={13} className="text-blue-500 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-slate-700 truncate">{mat.title}</p>
+                            <p className="text-[9px] text-slate-400 font-mono">{mat.fileType.toUpperCase()} · {mat.fileSize}</p>
+                          </div>
+                          {mat.fileUrl && (
+                            <a href={mat.fileUrl} target="_blank" rel="noreferrer" title="Татаж авах"
+                              className="shrink-0 text-[10px] text-blue-600 font-bold hover:underline">
+                              <Download size={12} />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
