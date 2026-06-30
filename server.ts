@@ -8,7 +8,7 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
+import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, ActiveVoting, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
 import { dbLoad, dbSave, dbClearAll, getSupabaseClient } from './src/db.js';
 
 const isCjs = typeof __filename !== 'undefined' && typeof __dirname !== 'undefined';
@@ -63,11 +63,57 @@ async function saveStateToDB() {
   ]);
 }
 
+function computeSpeakerRemaining(s: ActiveSpeaker): number {
+  if (s.isPaused) {
+    const pausedAt = s.pausedAt ?? Date.now();
+    const elapsed = pausedAt - s.startedAt - s.totalPausedMs;
+    return Math.max(0, s.duration - Math.floor(elapsed / 1000));
+  }
+  const elapsed = Date.now() - s.startedAt - s.totalPausedMs;
+  return Math.max(0, s.duration - Math.floor(elapsed / 1000));
+}
+
+function computeVotingRemaining(v: ActiveVoting): number {
+  if (!v.active || !v.startedAt) return 0;
+  const elapsed = Math.floor((Date.now() - v.startedAt) / 1000);
+  return Math.max(0, (v.duration ?? 60) - elapsed);
+}
+
+function checkAndUpdateTimers(): boolean {
+  if (!serverMeeting) return false;
+  let changed = false;
+  if (serverMeeting.voting?.active && serverMeeting.voting.startedAt) {
+    if (computeVotingRemaining(serverMeeting.voting) <= 0) {
+      archiveAndCloseVoting();
+      changed = true;
+    }
+  }
+  if (serverMeeting.currentSpeaker && !serverMeeting.currentSpeaker.isPaused) {
+    if (computeSpeakerRemaining(serverMeeting.currentSpeaker) <= 0 && !serverMeeting.currentSpeaker.timeUpTriggered) {
+      serverMeeting.currentSpeaker.timeUpTriggered = true;
+      serverMeeting.currentSpeaker.isPaused = true;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 // Server state accessor helper
 function getFullState(): AppState {
+  const meeting = serverMeeting ? {
+    ...serverMeeting,
+    currentSpeaker: serverMeeting.currentSpeaker ? {
+      ...serverMeeting.currentSpeaker,
+      remainingSeconds: computeSpeakerRemaining(serverMeeting.currentSpeaker)
+    } : null,
+    voting: {
+      ...serverMeeting.voting,
+      remainingSeconds: computeVotingRemaining(serverMeeting.voting)
+    }
+  } : null;
   return {
     version: appVersion,
-    meeting: serverMeeting,
+    meeting,
     delegates: seedDelegates.map(d => {
       const { password, ...rest } = d;
       return rest;
@@ -121,42 +167,10 @@ function archiveAndCloseVoting() {
   serverMeeting.voting.active = false;
 }
 
-// Server side tick interval for current speaker's time and voting countdown
+// Check if timers have expired every second (for local dev broadcasts)
 setInterval(() => {
-  if (!serverMeeting) return;
-  let stateChanged = false;
-  let persist = false;
-
-  // Speaker timer decrement
-  if (serverMeeting.currentSpeaker && !serverMeeting.currentSpeaker.isPaused) {
-    if (serverMeeting.currentSpeaker.remainingSeconds > 0) {
-      serverMeeting.currentSpeaker.remainingSeconds -= 1;
-      stateChanged = true;
-    } else if (!serverMeeting.currentSpeaker.timeUpTriggered) {
-      serverMeeting.currentSpeaker.timeUpTriggered = true;
-      serverMeeting.currentSpeaker.isPaused = true;
-      stateChanged = true;
-      persist = true;
-    }
-  }
-
-  // Voting countdown timer decrement (60 seconds)
-  if (serverMeeting.voting && serverMeeting.voting.active) {
-    if (serverMeeting.voting.remainingSeconds === undefined) {
-      serverMeeting.voting.remainingSeconds = 60;
-      serverMeeting.voting.duration = 60;
-    }
-    if (serverMeeting.voting.remainingSeconds > 0) {
-      serverMeeting.voting.remainingSeconds -= 1;
-      stateChanged = true;
-    } else {
-      archiveAndCloseVoting();
-      stateChanged = true;
-      persist = true;
-    }
-  }
-
-  if (stateChanged) broadcastState(persist);
+  const changed = checkAndUpdateTimers();
+  if (changed) broadcastState(true);
 }, 1000);
 
 // SSE endpoint
@@ -178,8 +192,13 @@ app.get('/api/events', (req: Request, res: Response) => {
   });
 });
 
-// GET state endpoint (for non-SSE fallback or checks)
+// GET state endpoint — checks timer expiry on each poll (needed for Vercel)
 app.get('/api/state', (req: Request, res: Response) => {
+  const changed = checkAndUpdateTimers();
+  if (changed) {
+    appVersion += 1;
+    saveStateToDB().catch(console.error);
+  }
   res.json(getFullState());
 });
 
@@ -333,7 +352,7 @@ app.post('/api/admin/voting/start', (req: Request, res: Response) => {
     agendaItemId,
     title: title || 'Санал хураалт эхэллээ',
     votes: {},
-    remainingSeconds: 60,
+    startedAt: Date.now(),
     duration: 60
   };
   serverNotifications.push({
@@ -498,15 +517,16 @@ app.post('/api/admin/speaker/next', (req: Request, res: Response) => {
     const nextItem = serverMeeting.speakerQueue[0]; // First in queue
     serverMeeting.speakerQueue.shift(); // Remove from queue
     
-    // Turn dictates duration: 1st -> 3 min (180s), 2nd/3rd -> 5 min (300s)
     const duration = nextItem.turn === 1 ? 180 : 300;
-    
     serverMeeting.currentSpeaker = {
       delegateId: nextItem.delegateId,
-      remainingSeconds: duration,
       duration,
       isPaused: false,
-      turn: nextItem.turn
+      turn: nextItem.turn,
+      startedAt: Date.now(),
+      totalPausedMs: 0,
+      pausedAt: null,
+      timeUpTriggered: false
     };
   } else {
     serverMeeting.currentSpeaker = null;
@@ -520,14 +540,16 @@ app.post('/api/admin/speaker/select-direct', (req: Request, res: Response) => {
   if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { delegateId, turn } = req.body;
   const duration = turn === 1 ? 180 : 300;
-
   serverMeeting.speakerQueue = serverMeeting.speakerQueue.filter(x => x.delegateId !== delegateId);
   serverMeeting.currentSpeaker = {
     delegateId,
-    remainingSeconds: duration,
     duration,
     isPaused: false,
-    turn: turn || 1
+    turn: turn || 1,
+    startedAt: Date.now(),
+    totalPausedMs: 0,
+    pausedAt: null,
+    timeUpTriggered: false
   };
   broadcastState();
   res.json({ success: true });
@@ -538,21 +560,22 @@ app.post('/api/admin/speaker/control', (req: Request, res: Response) => {
   if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { action } = req.body; // 'play' | 'pause' | 'add_time' | 'sub_time'
 
-  if (serverMeeting.currentSpeaker) {
+  const spk = serverMeeting.currentSpeaker;
+  if (spk) {
     if (action === 'play') {
-      serverMeeting.currentSpeaker.isPaused = false;
+      if (spk.isPaused && spk.pausedAt) {
+        spk.totalPausedMs += Date.now() - spk.pausedAt;
+        spk.pausedAt = null;
+      }
+      spk.isPaused = false;
+      spk.timeUpTriggered = false;
     } else if (action === 'pause') {
-      serverMeeting.currentSpeaker.isPaused = true;
+      if (!spk.isPaused) spk.pausedAt = Date.now();
+      spk.isPaused = true;
     } else if (action === 'add_time') {
-      serverMeeting.currentSpeaker.remainingSeconds = Math.min(
-        serverMeeting.currentSpeaker.duration + 300,
-        serverMeeting.currentSpeaker.remainingSeconds + 60
-      );
+      spk.duration += 60;
     } else if (action === 'sub_time') {
-      serverMeeting.currentSpeaker.remainingSeconds = Math.max(
-        0,
-        serverMeeting.currentSpeaker.remainingSeconds - 60
-      );
+      spk.duration = Math.max(0, spk.duration - 60);
     }
     broadcastState();
     res.json({ success: true });

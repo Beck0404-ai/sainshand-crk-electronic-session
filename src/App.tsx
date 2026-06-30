@@ -56,41 +56,32 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Load state and connect SSE
+  // Load state and poll for updates
   useEffect(() => {
-    let eventSource: EventSource | null = null;
-    let reconnectTimeout: any = null;
+    let pollInterval: any = null;
+    let active = true;
 
-    const connectSSE = () => {
-      setConnectionStatus('connecting');
-      eventSource = new EventSource('/api/events');
-
-      eventSource.onopen = () => {
-        setConnectionStatus('connected');
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const state: AppState = JSON.parse(event.data);
+    const fetchState = async () => {
+      try {
+        const res = await fetch('/api/state');
+        if (!res.ok) throw new Error('Server error');
+        const state: AppState = await res.json();
+        if (active) {
           setAppState(state);
-        } catch (err) {
-          console.error('Error parsing sse state updates', err);
+          setConnectionStatus('connected');
         }
-      };
-
-      eventSource.onerror = () => {
-        setConnectionStatus('disconnected');
-        eventSource?.close();
-        // Try auto reconnecting in 3 seconds
-        reconnectTimeout = setTimeout(connectSSE, 3000);
-      };
+      } catch {
+        if (active) setConnectionStatus('disconnected');
+      }
     };
 
-    connectSSE();
+    setConnectionStatus('connecting');
+    fetchState();
+    pollInterval = setInterval(fetchState, 2000);
 
     return () => {
-      eventSource?.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      active = false;
+      clearInterval(pollInterval);
     };
   }, []);
 

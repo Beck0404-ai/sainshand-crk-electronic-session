@@ -43,11 +43,16 @@ export interface SpeakerRequest {
 
 export interface ActiveSpeaker {
   delegateId: string;
-  remainingSeconds: number;
   duration: number; // total allocated (180 or 300)
   isPaused: boolean;
   turn: number;
   timeUpTriggered?: boolean;
+  // timestamp-based (server sets these)
+  startedAt: number;       // Date.now() when started or last resumed
+  totalPausedMs: number;   // accumulated pause duration in ms
+  pausedAt: number | null; // Date.now() when paused (null if running)
+  // computed field returned by server
+  remainingSeconds?: number;
 }
 
 export interface VoteRecord {
@@ -60,8 +65,9 @@ export interface ActiveVoting {
   agendaItemId: string;
   title: string;
   votes: Record<string, VoteRecord>; // delegateId -> VoteRecord
-  remainingSeconds?: number;
   duration?: number;
+  startedAt?: number;      // Date.now() when voting started
+  remainingSeconds?: number; // computed field returned by server
 }
 
 export interface VotingArchiveItem {
