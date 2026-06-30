@@ -1186,9 +1186,14 @@ export default function AdminDashboard({
                   return (
                     <tr key={d.id} className="hover:bg-slate-50/50">
                       <td className="py-2.5 px-3 font-mono text-slate-400">{d.id.toUpperCase()}</td>
-                      <td className="py-2.5 px-3 font-bold text-slate-850 flex items-center gap-2">
-                        <span className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center font-mono text-[9px] text-slate-500">{d.fullName.substring(0,2)}</span>
-                        <span>{d.fullName}</span>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <span className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center font-mono text-[9px] text-slate-500 flex-shrink-0">{d.fullName.substring(0,2)}</span>
+                          <div>
+                            <div className="font-bold text-slate-800 leading-tight">{d.fullName}</div>
+                            <div className="font-mono text-[10px] text-slate-400 leading-tight">@{d.username}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 text-slate-600 font-medium">{d.district}</td>
                       <td className="py-2.5 px-3 font-medium">
