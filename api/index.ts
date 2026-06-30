@@ -331,6 +331,14 @@ app.post('/api/admin/delegate/delete', (req: Request, res: Response) => {
 
 app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
   const { title, date, time, agenda } = req.body;
+  if (serverMeeting) {
+    if (serverMeeting.voting.active) archiveAndCloseVoting();
+    serverMeeting.status = 'дууссан';
+    serverMeeting.attendanceOpen = false;
+    serverMeeting.currentSpeaker = null;
+    serverMeeting.speakerQueue = [];
+    serverMeeting.voting.active = false;
+  }
   serverMeeting = {
     id: `meeting-${Date.now()}`, title: title || 'Шинэ Хуралдаан', date: date || new Date().toISOString().split('T')[0], time: time || '09:00', status: 'идэвхтэй',
     agenda: agenda || [{ id: 'agenda-1', title: '1. Орон нутгийн зорилтот хөтөлбөрийн биелэлтийн хяналт', order: 1, materials: [] }],

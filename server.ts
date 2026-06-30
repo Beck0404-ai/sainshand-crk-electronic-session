@@ -186,7 +186,16 @@ app.get('/api/state', (req: Request, res: Response) => {
 // Create/reset meeting state (Admin tool)
 app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
   const { title, date, time, agenda } = req.body;
-  
+
+  if (serverMeeting) {
+    if (serverMeeting.voting.active) archiveAndCloseVoting();
+    serverMeeting.status = 'дууссан';
+    serverMeeting.attendanceOpen = false;
+    serverMeeting.currentSpeaker = null;
+    serverMeeting.speakerQueue = [];
+    serverMeeting.voting.active = false;
+  }
+
   serverMeeting = {
     id: `meeting-${Date.now()}`,
     title: title || 'Сайншанд сумын ИТХ-ын Шинэ Хуралдаан',
@@ -214,7 +223,7 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
     },
     votingArchive: []
   };
-  
+
   // Send notification to all
   serverNotifications.push({
     id: `notif-${Date.now()}`,
@@ -223,7 +232,7 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
     timestamp: Date.now(),
     isRead: false
   });
-  
+
   broadcastState();
   res.json({ success: true, state: getFullState() });
 });

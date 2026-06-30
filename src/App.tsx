@@ -368,6 +368,8 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(meetingData)
     });
+    const stateRes = await fetch('/api/state');
+    if (stateRes.ok) setAppState(await stateRes.json());
   };
 
   const addMaterial = async (agendaItemId: string, material: Partial<AgendaMaterial>) => {
