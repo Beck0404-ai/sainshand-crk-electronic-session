@@ -157,7 +157,8 @@ app.get('/api/events', (req: Request, res: Response) => {
   req.on('close', () => { sseClients = sseClients.filter(c => c !== res); });
 });
 
-app.get('/api/state', (_req: Request, res: Response) => {
+app.get('/api/state', async (_req: Request, res: Response) => {
+  await loadStateFromDB();
   const changed = checkAndUpdateTimers();
   if (changed) {
     appVersion += 1;
