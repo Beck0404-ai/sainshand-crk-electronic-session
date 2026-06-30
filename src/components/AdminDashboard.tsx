@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, VotingArchiveItem, PendingDelegate } from '../types.js';
 import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
@@ -91,7 +91,13 @@ export default function AdminDashboard({
   const [matUploading, setMatUploading] = useState(false);
 
   // Voting setup inputs
-  const [votingTitle, setVotingTitle] = useState('Сайншанд сумын төсвийн тодотголыг дэмжих эсэх санал хураалт');
+  const [votingTitle, setVotingTitle] = useState('');
+
+  useEffect(() => {
+    if (!meeting) return;
+    const activeItem = meeting.agenda.find(ag => ag.id === meeting.activeAgendaItemId);
+    if (activeItem) setVotingTitle(activeItem.title);
+  }, [meeting?.id, meeting?.activeAgendaItemId]);
 
   // Direct custom speaker triggers
   const [directSpeakerId, setDirectSpeakerId] = useState('');
