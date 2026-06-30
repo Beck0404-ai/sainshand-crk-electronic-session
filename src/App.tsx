@@ -56,12 +56,22 @@ export default function App() {
     } catch {}
   }, []);
 
+  const refreshState = async () => {
+    try {
+      const res = await fetch('/api/state');
+      if (!res.ok) return;
+      setAppState(await res.json());
+      setConnectionStatus('connected');
+    } catch {
+      setConnectionStatus('disconnected');
+    }
+  };
+
   // Load state and poll for updates
   useEffect(() => {
-    let pollInterval: any = null;
     let active = true;
 
-    const fetchState = async () => {
+    const poll = async () => {
       try {
         const res = await fetch('/api/state');
         if (!res.ok) throw new Error('Server error');
@@ -76,8 +86,8 @@ export default function App() {
     };
 
     setConnectionStatus('connecting');
-    fetchState();
-    pollInterval = setInterval(fetchState, 2000);
+    poll();
+    const pollInterval = setInterval(poll, 2000);
 
     return () => {
       active = false;
@@ -196,6 +206,7 @@ export default function App() {
       const err = await res.json();
       alert(err.error || 'Ирц бүртгэлд алдаа гарлаа.');
     }
+    await refreshState();
   };
 
   const joinSpeakerQueue = async () => {
@@ -209,15 +220,17 @@ export default function App() {
       const err = await res.json();
       alert(err.error || 'Дараалалд ороход алдаа гарлаа.');
     }
+    await refreshState();
   };
 
   const leaveSpeakerQueue = async () => {
     if (!currentDelegateId) return;
-    const res = await fetch('/api/speaker-queue/leave', {
+    await fetch('/api/speaker-queue/leave', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId: currentDelegateId })
     });
+    await refreshState();
   };
 
   const submitVote = async (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
@@ -231,15 +244,17 @@ export default function App() {
       const err = await res.json();
       alert(err.error || 'Санал илгээхэд алдаа гарлаа.');
     }
+    await refreshState();
   };
 
   const updateProfile = async (data: { phone: string; email: string; bio: string }) => {
     if (!currentDelegateId) return;
-    const res = await fetch('/api/profile/update', {
+    await fetch('/api/profile/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId: currentDelegateId, ...data })
     });
+    await refreshState();
   };
 
   // Administrator actions
@@ -249,6 +264,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ open })
     });
+    await refreshState();
   };
 
   const startVoting = async (agendaItemId: string, title: string) => {
@@ -257,14 +273,17 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agendaItemId, title })
     });
+    await refreshState();
   };
 
   const stopVoting = async () => {
     await fetch('/api/admin/voting/stop', { method: 'POST' });
+    await refreshState();
   };
 
   const nextSpeaker = async () => {
     await fetch('/api/admin/speaker/next', { method: 'POST' });
+    await refreshState();
   };
 
   const directSelectSpeaker = async (delegateId: string, turn: number) => {
@@ -273,6 +292,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId, turn })
     });
+    await refreshState();
   };
 
   const controlSpeaker = async (action: 'play' | 'pause' | 'add_time' | 'sub_time') => {
@@ -281,14 +301,17 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
     });
+    await refreshState();
   };
 
   const skipSpeaker = async () => {
     await fetch('/api/admin/speaker/skip', { method: 'POST' });
+    await refreshState();
   };
 
   const clearQueue = async () => {
     await fetch('/api/admin/speaker/clear', { method: 'POST' });
+    await refreshState();
   };
 
   const resetPassword = async (delegateId: string) => {
@@ -297,6 +320,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId })
     });
+    await refreshState();
   };
 
   const getCredentials = async (delegateId: string): Promise<{ username: string; password: string }> => {
@@ -311,6 +335,7 @@ export default function App() {
       body: JSON.stringify({ delegateId, newPassword })
     });
     if (!res.ok) throw new Error((await res.json()).error);
+    await refreshState();
   };
 
   const approveDelegate = async (pendingId: string) => {
@@ -319,6 +344,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pendingId })
     });
+    await refreshState();
   };
 
   const rejectDelegate = async (pendingId: string) => {
@@ -327,6 +353,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pendingId })
     });
+    await refreshState();
   };
 
   const addDelegateDirectly = async (data: { username: string; fullName: string; party: string; district: string; phone: string; email: string; bio?: string }) => {
@@ -335,6 +362,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    await refreshState();
   };
 
   const editDelegate = async (delegateId: string, data: Partial<Delegate>) => {
@@ -343,6 +371,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId, ...data })
     });
+    await refreshState();
   };
 
   const deleteDelegate = async (delegateId: string) => {
@@ -351,6 +380,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegateId })
     });
+    await refreshState();
   };
 
   const createMeeting = async (meetingData: { title: string; date: string; time: string; agenda: AgendaItem[] }) => {
@@ -359,8 +389,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(meetingData)
     });
-    const stateRes = await fetch('/api/state');
-    if (stateRes.ok) setAppState(await stateRes.json());
+    await refreshState();
   };
 
   const addMaterial = async (agendaItemId: string, material: Partial<AgendaMaterial>) => {
@@ -369,6 +398,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agendaItemId, material })
     });
+    await refreshState();
   };
 
   const selectAgenda = async (agendaItemId: string) => {
@@ -377,6 +407,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agendaItemId })
     });
+    await refreshState();
   };
 
   const setMeetingStatus = async (status: 'товлогдсон' | 'идэвхтэй' | 'дууссан') => {
@@ -385,10 +416,12 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
+    await refreshState();
   };
 
   const handleClearNotifications = async () => {
     await fetch('/api/admin/notifications/clear', { method: 'POST' });
+    await refreshState();
   };
 
   const activeDelegate = delegates.find(d => d.id === currentDelegateId);
