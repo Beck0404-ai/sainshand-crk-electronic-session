@@ -237,7 +237,7 @@ export default function App() {
     await refreshState();
   };
 
-  const submitVote = async (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
+  const submitVote = async (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
     if (!currentDelegateId) return;
     const res = await fetch('/api/vote/submit', {
       method: 'POST',

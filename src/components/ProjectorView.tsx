@@ -62,9 +62,9 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
     if (meeting?.attendance[d.id]) {
       const voteItem = votes[d.id];
       if (voteItem) {
-        if (voteItem.choice === 'Зөвшөөрсөн') yesVotesList.push(d);
-        else if (voteItem.choice === 'Татгалзсан') noVotesList.push(d);
-        else if (voteItem.choice === 'Түтгэлзсэн') abstainVotesList.push(d);
+        if (voteItem.choice === 'Батлах' || voteItem.choice === 'Зөвшөөрсөн') yesVotesList.push(d);
+        else if (voteItem.choice === 'Татгалзах' || voteItem.choice === 'Татгалзсан') noVotesList.push(d);
+        else if (voteItem.choice === 'Санал гаргах' || voteItem.choice === 'Түтгэлзсэн') abstainVotesList.push(d);
       }
     }
   });
@@ -326,7 +326,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
                       <div className="flex items-center justify-between">
                         <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          👍 Зөвшөөрсөн: {yesVotesList.length} төлөөлөгч
+                          👍 Батлах: {yesVotesList.length} төлөөлөгч
                         </span>
                         <span className="text-2xl font-mono font-black text-emerald-400">{yesPercent}%</span>
                       </div>
@@ -337,7 +337,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
 
                       {/* Moving/Scrolling Names */}
                       <div className="pt-1">
-                        {renderMarqueeLine(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20', 'Зөвшөөрсөн')}
+                        {renderMarqueeLine(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20', 'Батлах')}
                       </div>
                     </div>
 
@@ -345,7 +345,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
                       <div className="flex items-center justify-between">
                         <span className="text-rose-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          👎 Татгалзсан: {noVotesList.length} төлөөлөгч
+                          👎 Татгалзах: {noVotesList.length} төлөөлөгч
                         </span>
                         <span className="text-2xl font-mono font-black text-rose-400">{noPercent}%</span>
                       </div>
@@ -355,7 +355,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                       </div>
 
                       <div className="pt-1">
-                        {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', 'Татгалзсан')}
+                        {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', 'Татгалзах')}
                       </div>
                     </div>
 
@@ -363,7 +363,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
                       <div className="flex items-center justify-between">
                         <span className="text-amber-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          ✋ Түтгэлзсэн: {abstainVotesList.length} төлөөлөгч
+                          ✍️ Санал гаргах: {abstainVotesList.length} төлөөлөгч
                         </span>
                         <span className="text-2xl font-mono font-black text-amber-400">{abstainPercent}%</span>
                       </div>
@@ -373,7 +373,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                       </div>
 
                       <div className="pt-1">
-                        {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', 'Түтгэлзсэн')}
+                        {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', 'Санал гаргах')}
                       </div>
                     </div>
 

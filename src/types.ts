@@ -64,7 +64,7 @@ export interface ActiveSpeaker {
 }
 
 export interface VoteRecord {
-  choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн';
+  choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн';
   timestamp: number;
 }
 

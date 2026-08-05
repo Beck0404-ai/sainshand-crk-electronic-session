@@ -923,9 +923,9 @@ export default function AdminDashboard({
                         {(() => {
                           const votes = Object.values(meeting.voting.votes);
                           const totalVotes = votes.length;
-                          const yesCount = votes.filter(v => v.choice === 'Зөвшөөрсөн').length;
-                          const noCount = votes.filter(v => v.choice === 'Татгалзсан').length;
-                          const abstainCount = votes.filter(v => v.choice === 'Түтгэлзсэн').length;
+                          const yesCount = votes.filter(v => v.choice === 'Батлах' || v.choice === 'Зөвшөөрсөн').length;
+                          const noCount = votes.filter(v => v.choice === 'Татгалзах' || v.choice === 'Татгалзсан').length;
+                          const abstainCount = votes.filter(v => v.choice === 'Санал гаргах' || v.choice === 'Түтгэлзсэн').length;
 
                           const yesPct = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
                           const noPct = totalVotes > 0 ? Math.round((noCount / totalVotes) * 100) : 0;
@@ -944,15 +944,15 @@ export default function AdminDashboard({
 
                               <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-emerald-800 shadow-sm">
-                                  <div className="text-[10px] font-sans font-bold">👍 Зөвшөөрсөн</div>
+                                  <div className="text-[10px] font-sans font-bold">👍 Батлах</div>
                                   <div className="text-sm font-black mt-0.5">{yesCount} <span className="text-[10px] text-emerald-600 font-bold">({yesPct}%)</span></div>
                                 </div>
                                 <div className="bg-rose-50 border border-rose-200 p-2 rounded-xl text-rose-800 shadow-sm">
-                                  <div className="text-[10px] font-sans font-bold">👎 Татгалзсан</div>
+                                  <div className="text-[10px] font-sans font-bold">👎 Татгалзах</div>
                                   <div className="text-sm font-black mt-0.5">{noCount} <span className="text-[10px] text-rose-600 font-bold">({noPct}%)</span></div>
                                 </div>
                                 <div className="bg-amber-50 border border-amber-200 p-2 rounded-xl text-amber-800 shadow-sm">
-                                  <div className="text-[10px] font-sans font-bold">✋ Түтгэлзсэн</div>
+                                  <div className="text-[10px] font-sans font-bold">✍️ Санал гаргах</div>
                                   <div className="text-sm font-black mt-0.5">{abstainCount} <span className="text-[10px] text-amber-600 font-bold">({abstainPct}%)</span></div>
                                 </div>
                               </div>
@@ -1876,9 +1876,9 @@ export default function AdminDashboard({
 
               <div className="space-y-3">
                 {[...meeting.votingArchive].reverse().map((item: VotingArchiveItem, idx) => {
-                  const yesIds     = Object.entries(item.votes).filter(([, v]) => v.choice === 'Зөвшөөрсөн').map(([id]) => id);
-                  const noIds      = Object.entries(item.votes).filter(([, v]) => v.choice === 'Татгалзсан').map(([id]) => id);
-                  const abstainIds = Object.entries(item.votes).filter(([, v]) => v.choice === 'Түтгэлзсэн').map(([id]) => id);
+                  const yesIds     = Object.entries(item.votes).filter(([, v]) => v.choice === 'Батлах' || v.choice === 'Зөвшөөрсөн').map(([id]) => id);
+                  const noIds      = Object.entries(item.votes).filter(([, v]) => v.choice === 'Татгалзах' || v.choice === 'Татгалзсан').map(([id]) => id);
+                  const abstainIds = Object.entries(item.votes).filter(([, v]) => v.choice === 'Санал гаргах' || v.choice === 'Түтгэлзсэн').map(([id]) => id);
                   const total  = yesIds.length + noIds.length + abstainIds.length;
                   const yesPct = total > 0 ? Math.round((yesIds.length / total) * 100) : 0;
                   const noPct  = total > 0 ? Math.round((noIds.length  / total) * 100) : 0;
@@ -1908,7 +1908,7 @@ export default function AdminDashboard({
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 space-y-1">
                           <div className="flex items-center justify-between font-bold text-emerald-700">
-                            <span>👍 Зөвшөөрсөн</span>
+                            <span>👍 Батлах</span>
                             <span className="font-mono">{yesIds.length} ({yesPct}%)</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -1924,7 +1924,7 @@ export default function AdminDashboard({
 
                         <div className="bg-rose-50 border border-rose-100 rounded-lg p-2.5 space-y-1">
                           <div className="flex items-center justify-between font-bold text-rose-700">
-                            <span>👎 Татгалзсан</span>
+                            <span>👎 Татгалзах</span>
                             <span className="font-mono">{noIds.length} ({noPct}%)</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -1940,7 +1940,7 @@ export default function AdminDashboard({
 
                         <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5 space-y-1">
                           <div className="flex items-center justify-between font-bold text-amber-700">
-                            <span>✋ Түтгэлзсэн</span>
+                            <span>✍️ Санал гаргах</span>
                             <span className="font-mono">{abstainIds.length} ({abstainPct}%)</span>
                           </div>
                           <div className="flex flex-wrap gap-1">

@@ -20,7 +20,7 @@ interface DelegateDashboardProps {
   onRegisterAttendance: () => Promise<void>;
   onJoinSpeakerQueue: () => Promise<void>;
   onLeaveSpeakerQueue: () => Promise<void>;
-  onSubmitVote: (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
+  onSubmitVote: (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
   onUpdateProfile: (data: { phone: string; email: string; bio: string }) => Promise<void>;
   onLogout: () => void;
 }
@@ -51,7 +51,7 @@ export default function DelegateDashboard({
   const [readMaterialIds, setReadMaterialIds] = useState<string[]>([]);
   const [submittingChoice, setSubmittingChoice] = useState<string | null>(null);
 
-  const handleDelegateVoteClick = async (choice: 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
+  const handleDelegateVoteClick = async (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => {
     setSubmittingChoice(choice);
     try {
       await onSubmitVote(choice);
@@ -262,31 +262,31 @@ export default function DelegateDashboard({
                 <button
                   type="button"
                   disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Зөвшөөрсөн')}
-                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                  onClick={() => handleDelegateVoteClick('Батлах')}
+                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
                 >
                   <span className="text-xl">👍</span>
-                  <span>{submittingChoice === 'Зөвшөөрсөн' ? 'Илгээж байна...' : 'Зөвшөөрсөн'}</span>
+                  <span>{submittingChoice === 'Батлах' ? 'Илгээж байна...' : 'Батлах'}</span>
                 </button>
 
                 <button
                   type="button"
                   disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Татгалзсан')}
-                  className="bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                  onClick={() => handleDelegateVoteClick('Татгалзах')}
+                  className="bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
                 >
                   <span className="text-xl">👎</span>
-                  <span>{submittingChoice === 'Татгалзсан' ? 'Илгээж байна...' : 'Татгалзсан'}</span>
+                  <span>{submittingChoice === 'Татгалзах' ? 'Илгээж байна...' : 'Татгалзах'}</span>
                 </button>
 
                 <button
                   type="button"
                   disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Түтгэлзсэн')}
-                  className="bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                  onClick={() => handleDelegateVoteClick('Санал гаргах')}
+                  className="bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
                 >
-                  <span className="text-xl">✋</span>
-                  <span>{submittingChoice === 'Түтгэлзсэн' ? 'Илгээж байна...' : 'Түтгэлзсэн'}</span>
+                  <span className="text-xl">✍️</span>
+                  <span>{submittingChoice === 'Санал гаргах' ? 'Илгээж байна...' : 'Санал гаргах'}</span>
                 </button>
               </div>
               <div className="mt-5 text-center text-[10px] text-slate-400 font-mono">
