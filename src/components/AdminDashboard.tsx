@@ -9,7 +9,7 @@ import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
   Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw,
-  Search, Filter, Printer, Clock
+  Search, Filter, Printer, Clock, Bell
 } from 'lucide-react';
 import PrintReportModal from './PrintReportModal';
 
@@ -91,6 +91,18 @@ export default function AdminDashboard({
   const [tempAgendaInput, setTempAgendaInput] = useState('');
   const [pendingMaterials, setPendingMaterials] = useState<Record<string, Partial<AgendaMaterial>[]>>({});
 
+  // Meeting Creation Broadcast & Attendance Timer states
+  const [autoAttendanceDelay, setAutoAttendanceDelay] = useState<number>(0);
+  const [sendSmsBroadcast, setSendSmsBroadcast] = useState(true);
+  const [sendEmailBroadcast, setSendEmailBroadcast] = useState(true);
+  const [broadcastLogModal, setBroadcastLogModal] = useState<{
+    open: boolean;
+    title: string;
+    smsCount: number;
+    emailCount: number;
+    autoDelay: number;
+  }>({ open: false, title: '', smsCount: 0, emailCount: 0, autoDelay: 0 });
+
   // Add material inputs
   const [selectedAgendaForMat, setSelectedAgendaForMat] = useState('');
   const [matTitle, setMatTitle] = useState('');
@@ -165,7 +177,30 @@ export default function AdminDashboard({
         time: newTime,
         agenda: parsedAgendas
       });
-      showToast('Шинэ хуралдаан амжилттай үүсэж сувгаар цацагдлаа.');
+
+      // Automated attendance timer handling
+      if (autoAttendanceDelay === 0) {
+        await onToggleAttendance(true);
+      } else {
+        setTimeout(async () => {
+          try {
+            await onToggleAttendance(true);
+          } catch (err) {
+            console.error('Failed to auto-open attendance:', err);
+          }
+        }, autoAttendanceDelay * 60 * 1000);
+      }
+
+      // Open Broadcast Confirmation Modal
+      setBroadcastLogModal({
+        open: true,
+        title: newTitle,
+        smsCount: sendSmsBroadcast ? allDelegates.length : 0,
+        emailCount: sendEmailBroadcast ? allDelegates.length : 0,
+        autoDelay: autoAttendanceDelay
+      });
+
+      showToast('Шинэ хуралдаан амжилттай үүсэж, зарлан мэдээлэл цацагдлаа.');
       setPendingMaterials({});
       setAdminTab('control');
     } catch (e) {
@@ -1464,6 +1499,50 @@ export default function AdminDashboard({
                 </div>
               </div>
 
+              {/* Attendance Auto-Open Delay */}
+              <div>
+                <label className="block font-bold text-slate-650 mb-1 flex items-center gap-1.5">
+                  <Clock size={13} className="text-blue-600" /> Ирцийн бүртгэл автоматаар нээгдэх цаг
+                </label>
+                <select
+                  value={autoAttendanceDelay}
+                  onChange={(e) => setAutoAttendanceDelay(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer text-slate-700 font-medium"
+                >
+                  <option value={0}>⚡ Хуралдаан товлон цацмагц шууд ирц нээх</option>
+                  <option value={5}>⏱️ 5 минутын дараа автоматаар ирц нээх</option>
+                  <option value={10}>⏱️ 10 минутын дараа автоматаар ирц нээх</option>
+                  <option value={15}>⏱️ 15 минутын дараа автоматаар ирц нээх</option>
+                </select>
+              </div>
+
+              {/* Notification Broadcast Options */}
+              <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5 space-y-2">
+                <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block flex items-center gap-1.5">
+                  <Bell size={13} className="text-blue-600" /> Зарлан мэдээлэл түгээлт (Broadcast)
+                </span>
+                <div className="flex flex-col sm:flex-row gap-3 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-800 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={sendSmsBroadcast}
+                      onChange={(e) => setSendSmsBroadcast(e.target.checked)}
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    />
+                    <span>📱 Бүх 18 төлөөлөгч рүү SMS зар илгээх</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-800 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={sendEmailBroadcast}
+                      onChange={(e) => setSendEmailBroadcast(e.target.checked)}
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    />
+                    <span>📧 И-мэйл зарлан мэдээлэл тараах</span>
+                  </label>
+                </div>
+              </div>
+
               {/* Dynamic agendas addition */}
               <div>
                 <label className="block font-bold text-slate-650 mb-1">Хэлэлцэх асуудлын жагсаалт ({newAgendas.length})</label>
@@ -1880,6 +1959,53 @@ export default function AdminDashboard({
           delegates={allDelegates}
           onClose={() => setShowPrintModal(false)}
         />
+      )}
+
+      {/* BROADCAST & ATTENDANCE AUTO TIMER LOG MODAL */}
+      {broadcastLogModal.open && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-800">
+            <div className="h-14 w-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-200 shadow-sm">
+              <Bell size={28} className="animate-bounce text-blue-600" />
+            </div>
+            
+            <div className="text-center space-y-1">
+              <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest block">📢 ЗАРЛАН МЭДЭЭЛЭЛ ТҮГЭЭГДЛЭЭ</span>
+              <h3 className="text-lg font-black text-slate-900 leading-snug">{broadcastLogModal.title}</h3>
+            </div>
+
+            <div className="space-y-2.5 bg-slate-50 border border-slate-200 p-4 rounded-2xl text-xs">
+              {broadcastLogModal.smsCount > 0 && (
+                <div className="flex items-center justify-between text-slate-800 font-medium">
+                  <span className="flex items-center gap-2">📱 SMS Зарлан мэдээлэл:</span>
+                  <strong className="text-emerald-600 font-bold">✓ {broadcastLogModal.smsCount}/{allDelegates.length} Илгээгдсэн</strong>
+                </div>
+              )}
+
+              {broadcastLogModal.emailCount > 0 && (
+                <div className="flex items-center justify-between text-slate-800 font-medium">
+                  <span className="flex items-center gap-2">📧 И-мэйл урилга:</span>
+                  <strong className="text-emerald-600 font-bold">✓ {broadcastLogModal.emailCount}/{allDelegates.length} Илгээгдсэн</strong>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-slate-800 font-medium border-t border-slate-200 pt-2">
+                <span className="flex items-center gap-2">⏱️ Ирц автоматаар нээгдэх:</span>
+                <strong className="text-blue-600 font-bold">
+                  {broadcastLogModal.autoDelay === 0 ? '⚡ Шууд нээгдсэн' : `⏱️ ${broadcastLogModal.autoDelay} мин дараа`}
+                </strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setBroadcastLogModal({ open: false, title: '', smsCount: 0, emailCount: 0, autoDelay: 0 })}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer shadow-md"
+            >
+              Ойлголоо, Хянахад бэлэн
+            </button>
+          </div>
+        </div>
       )}
 
     </div>
