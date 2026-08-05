@@ -705,6 +705,76 @@ export default function AdminDashboard({
                 Шинэ хуралдаан үүсгэх
               </button>
             </div>
+          ) : meeting.status === 'дууссан' ? (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm text-center max-w-3xl mx-auto space-y-6 animate-fadeIn">
+              <div className="h-16 w-16 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center mx-auto border border-slate-200 shadow-inner">
+                <CheckCircle size={36} className="text-emerald-600" />
+              </div>
+              
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">ХУРАЛДААНЫ ТӨЛӨВ: АЛБАН ЁСООР ДУУССАН</span>
+                <h3 className="text-2xl font-black text-slate-900">{meeting.title}</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Огноо: {meeting.date} | Эхэлсэн цаг: {meeting.time} | Ирцийн хувь: <strong className="text-slate-800 font-bold">{attendancePercentage}% ({presentDelegatesCount}/{allDelegates.length})</strong>
+                </p>
+              </div>
+
+              {/* Stat badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                  <span className="text-[10px] text-slate-400 font-mono block uppercase font-bold">Бүртгэгдсэн ирц</span>
+                  <span className="text-xl font-bold text-emerald-700 font-mono">{presentDelegatesCount} / {allDelegates.length}</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                  <span className="text-[10px] text-slate-400 font-mono block uppercase font-bold">Хэлэлцсэн асуудал</span>
+                  <span className="text-xl font-bold text-blue-700 font-mono">{meeting.agenda.length} сэдэв</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                  <span className="text-[10px] text-slate-400 font-mono block uppercase font-bold">Явуулсан санал асуулга</span>
+                  <span className="text-xl font-bold text-purple-700 font-mono">{meeting.votingArchive.length} шийдвэр</span>
+                </div>
+              </div>
+
+              {/* Quick Action buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-150">
+                <button
+                  type="button"
+                  onClick={() => setShowPrintModal(true)}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
+                >
+                  <Printer size={15} className="text-blue-400" />
+                  📄 Хурлын Эцсийн Протокол Хэвлэх / PDF
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('reports')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
+                >
+                  <FileCheck size={15} />
+                  📊 Тайлан & Архив харах
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('meeting')}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-3 rounded-xl transition flex items-center gap-2 cursor-pointer border border-slate-200"
+                >
+                  <PlusCircle size={15} />
+                  Шинэ хурал үүсгэх
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { if (confirm('Хуралдааныг буцаан сэргээж идэвхтэй болгох уу?')) onSetMeetingStatus('идэвхтэй'); }}
+                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-transparent hover:border-amber-200"
+                  title="Буцаан сэргээх"
+                >
+                  <RotateCcw size={14} />
+                  Хуралдаан сэргээх
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
@@ -768,12 +838,9 @@ export default function AdminDashboard({
                   <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b pb-2.5 mb-3 flex items-center justify-between">
                     <span>ХУРАЛДААНЫ ЯВЦ УДИРДАХ</span>
                     <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                      meeting.status === 'идэвхтэй' ? 'bg-emerald-100 text-emerald-700' :
-                      meeting.status === 'дууссан'   ? 'bg-slate-100 text-slate-500' :
-                                                       'bg-amber-100 text-amber-700'
+                      meeting.status === 'идэвхтэй' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                     }`}>
-                      {meeting.status === 'идэвхтэй' ? '🟢 ЯВАГДАЖ БАЙНА' :
-                       meeting.status === 'дууссан'   ? '⚫ ДУУССАН' : '⏸️ ТОВЛОГДСОН'}
+                      {meeting.status === 'идэвхтэй' ? '🟢 ЯВАГДАЖ БАЙНА' : '⏸️ ТОВЛОГДСОН'}
                     </span>
                   </h3>
                   <div className="space-y-2">
@@ -796,8 +863,7 @@ export default function AdminDashboard({
                     <button
                       type="button"
                       onClick={() => { if (confirm('Хуралдааныг дуусгах уу? Ирц, санал хураалт, дараалал бүгд хаагдана.')) onSetMeetingStatus('дууссан'); }}
-                      disabled={meeting.status === 'дууссан'}
-                      className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer"
+                      className="w-full bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer"
                     >
                       🔴 Хуралдаан дуусгах
                     </button>
