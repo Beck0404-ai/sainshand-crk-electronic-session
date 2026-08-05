@@ -98,6 +98,7 @@ export default function AdminDashboard({
   const [matSize, setMatSize] = useState('2.4 MB');
   const [matContent, setMatContent] = useState('');
   const [matFile, setMatFile] = useState<File | null>(null);
+  const [matAccessLevel, setMatAccessLevel] = useState<'Нийтэд нээлттэй' | 'Зөвхөн Төлөөлөгчдөд' | 'Хязгаарлагдмал'>('Зөвхөн Төлөөлөгчдөд');
   const [matUploading, setMatUploading] = useState(false);
 
   // Voting setup inputs
@@ -223,7 +224,8 @@ export default function AdminDashboard({
         fileType: matType,
         fileSize: matSize,
         contentSummary: matContent || 'Орон нутгийн танилцуулга материал.',
-        fileUrl: uploadedFileUrl
+        fileUrl: uploadedFileUrl,
+        accessLevel: matAccessLevel
       };
       setPendingMaterials(prev => ({
         ...prev,
@@ -239,7 +241,8 @@ export default function AdminDashboard({
         fileType: matType,
         fileSize: matSize,
         contentSummary: matContent || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах заалт уншлага.',
-        fileUrl: uploadedFileUrl
+        fileUrl: uploadedFileUrl,
+        accessLevel: matAccessLevel
       });
       showToast('Файл амжилттай хавсаргагдлаа.');
       setMatTitle(''); setMatContent(''); setMatFile(null);
@@ -1495,8 +1498,17 @@ export default function AdminDashboard({
                       required
                     />
                   </div>
-                  <div className="flex flex-col justify-end">
-                    <span className="text-[9px] text-slate-400 pb-2 italic font-semibold uppercase">Хувилах баримтын сан</span>
+                  <div>
+                    <label className="block font-bold text-slate-655 mb-1">Нууцын зэрэглэл</label>
+                    <select
+                      value={matAccessLevel}
+                      onChange={(e) => setMatAccessLevel(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer text-slate-700 font-medium"
+                    >
+                      <option value="Нийтэд нээлттэй">🌐 Нийтэд нээлттэй</option>
+                      <option value="Зөвхөн Төлөөлөгчдөд">🛡️ Зөвхөн Төлөөлөгчдөд</option>
+                      <option value="Хязгаарлагдмал">🔒 Хязгаарлагдмал</option>
+                    </select>
                   </div>
                 </div>
 

@@ -25,6 +25,14 @@ export interface AgendaMaterial {
   fileSize: string;
   contentSummary: string;
   fileUrl?: string; // Google Drive preview link or direct PDF URL
+  accessLevel?: 'Нийтэд нээлттэй' | 'Зөвхөн Төлөөлөгчдөд' | 'Хязгаарлагдмал';
+}
+
+export interface MaterialNote {
+  materialId: string;
+  delegateId: string;
+  noteText: string;
+  updatedAt: number;
 }
 
 export interface AgendaItem {

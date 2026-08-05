@@ -8,7 +8,7 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaMaterial } from '../types
 import {
   CheckCircle, Clock, Volume2, AlertTriangle, FileText,
   Download, Users, BookOpen, CheckSquare, History, Bell, Mail, Phone, ArrowRight,
-  Menu, X, Send
+  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -49,6 +49,29 @@ export default function DelegateDashboard({
   const [pdfViewer, setPdfViewer] = useState<AgendaMaterial | null>(null);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
   const [readMaterialIds, setReadMaterialIds] = useState<string[]>([]);
+
+  // Keyword Search in Agenda Materials
+  const [matSearchQuery, setMatSearchQuery] = useState('');
+
+  // Personal Sticky Notes for Agenda Materials (localStorage persisted)
+  const [materialNotes, setMaterialNotes] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`material_notes_${delegate.id}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleSaveMaterialNote = (materialId: string, text: string) => {
+    const updated = { ...materialNotes, [materialId]: text };
+    setMaterialNotes(updated);
+    try {
+      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to save note to localStorage:', e);
+    }
+  };
 
   const playTimerBeep = () => {
     try {
@@ -521,6 +544,17 @@ export default function DelegateDashboard({
                 </div>
                 <h3 className="text-base font-bold text-white leading-tight">{meeting.title}</h3>
                 <p className="text-[11px] text-slate-400 mt-1 font-mono">{meeting.agenda.length} асуудал хэлэлцэгдэх</p>
+                
+                <div className="mt-3 relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={matSearchQuery}
+                    onChange={(e) => setMatSearchQuery(e.target.value)}
+                    placeholder="Материал агуулгаас 'төсөв', 'газар', 'тогтоол', 'заалт' гэж хайх..."
+                    className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-400 outline-none focus:border-blue-400"
+                  />
+                </div>
               </div>
 
               {/* Accordion items */}
@@ -571,7 +605,6 @@ export default function DelegateDashboard({
                             </svg>
                           </div>
                         </button>
-
                         {/* Expanded materials */}
                         <AnimatePresence>
                           {isExpanded && (
@@ -585,7 +618,7 @@ export default function DelegateDashboard({
                             >
                               <div className="px-6 pb-6 pt-2 bg-blue-50/20">
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                                  Хавсаргасан баримт бичгүүд
+                                  Хавсаргасан баримт бичгүүд ({item.materials.length})
                                 </p>
                                 {item.materials.length === 0 ? (
                                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center">
@@ -594,66 +627,107 @@ export default function DelegateDashboard({
                                   </div>
                                 ) : (
                                   <div className="space-y-4">
-                                    {item.materials.map(mat => (
-                                      <div key={mat.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                                    {item.materials
+                                      .filter(mat => {
+                                        const q = matSearchQuery.toLowerCase().trim();
+                                        if (!q) return true;
+                                        return mat.title.toLowerCase().includes(q) ||
+                                               mat.contentSummary.toLowerCase().includes(q) ||
+                                               (mat.accessLevel && mat.accessLevel.toLowerCase().includes(q));
+                                      })
+                                      .map(mat => (
+                                       <div key={mat.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 
-                                        {/* Material header */}
-                                        <div className="p-4 flex items-center gap-4 border-b border-slate-100">
-                                          <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-sm uppercase flex-shrink-0 text-white shadow-sm ${
-                                            mat.fileType === 'pdf' ? 'bg-rose-500' : mat.fileType === 'docx' ? 'bg-indigo-500' : 'bg-emerald-500'
-                                          }`}>
-                                            {mat.fileType}
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-slate-800 text-sm leading-tight truncate">{mat.title}</p>
-                                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{mat.fileSize}</p>
-                                          </div>
-                                          <div className="flex items-center gap-2 flex-shrink-0">
-                                            {mat.fileUrl && (
-                                              <button
-                                                type="button"
-                                                onClick={() => openPdfMaterial(mat)}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition cursor-pointer text-xs font-bold shadow-sm"
-                                              >
-                                                <FileText size={14} />
-                                                Нээж үзэх
-                                              </button>
-                                            )}
-                                            <button
-                                              type="button"
-                                              onClick={() => triggerSimulatedDownload(mat)}
-                                              className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 px-3 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer text-xs font-bold"
-                                            >
-                                              <Download size={14} />
-                                              Татах
-                                            </button>
-                                          </div>
-                                        </div>
+                                         {/* Material header */}
+                                         <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100">
+                                           <div className="flex items-center gap-3 min-w-0 flex-1">
+                                             <div className={`h-11 w-11 rounded-xl flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 text-white shadow-sm ${
+                                               mat.fileType === 'pdf' ? 'bg-rose-500' : mat.fileType === 'docx' ? 'bg-indigo-500' : 'bg-emerald-500'
+                                             }`}>
+                                               {mat.fileType}
+                                             </div>
+                                             <div className="flex-1 min-w-0">
+                                               <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                                 <span className="font-bold text-slate-800 text-sm leading-tight truncate">{mat.title}</span>
+                                                 {mat.accessLevel && (
+                                                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                                                     mat.accessLevel === 'Нийтэд нээлттэй' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                     mat.accessLevel === 'Хязгаарлагдмал' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                     'bg-blue-50 text-blue-700 border-blue-200'
+                                                   }`}>
+                                                     {mat.accessLevel === 'Нийтэд нээлттэй' ? <Globe size={10} /> :
+                                                      mat.accessLevel === 'Хязгаарлагдмал' ? <Lock size={10} /> : <Shield size={10} />}
+                                                     {mat.accessLevel}
+                                                   </span>
+                                                 )}
+                                               </div>
+                                               <p className="text-[11px] text-slate-400 font-mono">{mat.fileSize}</p>
+                                             </div>
+                                           </div>
 
-                                        {/* Material body */}
-                                        {mat.fileUrl ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => openPdfMaterial(mat)}
-                                            className="w-full p-5 flex items-center gap-4 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer text-left group"
-                                          >
-                                            <div className="h-14 w-14 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                              <FileText size={28} className="text-rose-400" />
-                                            </div>
-                                            <div className="flex-1">
-                                              <p className="font-bold text-slate-700 group-hover:text-blue-700 transition text-sm">Файлыг нээж үзэх</p>
-                                              <p className="text-xs text-slate-400 mt-0.5">Дарж PDF баримтыг шууд нээнэ</p>
-                                            </div>
-                                            <ArrowRight size={20} className="text-blue-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                                          </button>
-                                        ) : (
-                                          <div className="p-5 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
-                                            {mat.contentSummary}
-                                          </div>
-                                        )}
+                                           <div className="flex items-center gap-2 flex-shrink-0">
+                                             {mat.fileUrl && (
+                                               <button
+                                                 type="button"
+                                                 onClick={() => openPdfMaterial(mat)}
+                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition cursor-pointer text-xs font-bold shadow-sm"
+                                               >
+                                                 <FileText size={14} />
+                                                 Нээж үзэх
+                                               </button>
+                                             )}
+                                             <button
+                                               type="button"
+                                               onClick={() => triggerSimulatedDownload(mat)}
+                                               className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 px-3 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer text-xs font-bold"
+                                             >
+                                               <Download size={14} />
+                                               Татах
+                                             </button>
+                                           </div>
+                                         </div>
 
-                                      </div>
-                                    ))}
+                                         {/* Material body */}
+                                         {mat.fileUrl ? (
+                                           <button
+                                             type="button"
+                                             onClick={() => openPdfMaterial(mat)}
+                                             className="w-full p-4 flex items-center gap-4 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer text-left group"
+                                           >
+                                             <div className="h-12 w-12 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                               <FileText size={24} className="text-rose-400" />
+                                             </div>
+                                             <div className="flex-1">
+                                               <p className="font-bold text-slate-700 group-hover:text-blue-700 transition text-xs">Файлыг нээж үзэх</p>
+                                               <p className="text-[11px] text-slate-400 mt-0.5">Дарж баримтыг шууд нээнэ</p>
+                                             </div>
+                                             <ArrowRight size={18} className="text-blue-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                                           </button>
+                                         ) : (
+                                           <div className="p-4 text-xs leading-relaxed text-slate-600 whitespace-pre-wrap">
+                                             {mat.contentSummary}
+                                           </div>
+                                         )}
+
+                                         {/* DELEGATE PERSONAL STICKY NOTE */}
+                                         <div className="p-3.5 bg-amber-50/70 border-t border-amber-200/80">
+                                           <div className="flex items-center justify-between mb-1.5 text-xs font-bold text-amber-900">
+                                             <span className="flex items-center gap-1.5">
+                                               <FileEdit size={13} className="text-amber-600" /> Миний хувийн тэмдэглэл (Sticky Note)
+                                             </span>
+                                             <span className="text-[9px] text-amber-700 font-mono">🔒 Зөвхөн танд харагдана</span>
+                                           </div>
+                                           <textarea
+                                             value={materialNotes[mat.id] || ''}
+                                             onChange={(e) => handleSaveMaterialNote(mat.id, e.target.value)}
+                                             rows={2}
+                                             placeholder="Асуулт, санал эсвэл үг хэлэхэд ашиглах тэмдэглэлээ энд бичнэ үү..."
+                                             className="w-full text-xs p-2.5 bg-white/80 border border-amber-300 rounded-xl text-amber-950 outline-none focus:border-amber-500 font-sans resize-none shadow-inner"
+                                           />
+                                         </div>
+
+                                       </div>
+                                     ))}
                                   </div>
                                 )}
                               </div>
