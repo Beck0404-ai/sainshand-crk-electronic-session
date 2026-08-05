@@ -1529,7 +1529,7 @@ export default function AdminDashboard({
                       onChange={(e) => setSendSmsBroadcast(e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                     />
-                    <span>📱 Бүх 18 төлөөлөгч рүү SMS зар илгээх</span>
+                    <span>📱 Бүх {allDelegates.length} төлөөлөгч рүү SMS зар илгээх</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-slate-800 font-medium">
                     <input
