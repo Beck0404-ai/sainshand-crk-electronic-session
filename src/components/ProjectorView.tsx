@@ -320,64 +320,74 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                   </div>
 
                   {/* VOTE STATS PROGRESS BAR COLUMNS */}
-                  <div className="space-y-5">
+                  {(() => {
+                    const isRes = meeting.voting.title.includes('ТОГТООЛЫН ТӨСӨЛ');
+                    const label1 = isRes ? '👍 Батлах' : '👍 Зөвшөөрсөн';
+                    const label2 = isRes ? '👎 Татгалзах' : '👎 Татгалзсан';
+                    const label3 = isRes ? '✍️ Санал гаргах' : '✋ Түтгэлзсэн';
+                    const text1 = isRes ? 'Батлах' : 'Зөвшөөрсөн';
+                    const text2 = isRes ? 'Татгалзах' : 'Татгалзсан';
+                    const text3 = isRes ? 'Санал гаргах' : 'Түтгэлзсэн';
 
-                    {/* YES STAT */}
-                    <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          👍 Батлах: {yesVotesList.length} төлөөлөгч
-                        </span>
-                        <span className="text-2xl font-mono font-black text-emerald-400">{yesPercent}%</span>
+                    return (
+                      <div className="space-y-5">
+                        {/* YES STAT */}
+                        <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              {label1}: {yesVotesList.length} төлөөлөгч
+                            </span>
+                            <span className="text-2xl font-mono font-black text-emerald-400">{yesPercent}%</span>
+                          </div>
+
+                          <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
+                            <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{ width: `${yesPercent}%` }}></div>
+                          </div>
+
+                          {/* Moving/Scrolling Names */}
+                          <div className="pt-1">
+                            {renderMarqueeLine(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20', text1)}
+                          </div>
+                        </div>
+
+                        {/* NO STAT */}
+                        <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
+                          <div className="flex items-center justify-between">
+                            <span className="text-rose-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              {label2}: {noVotesList.length} төлөөлөгч
+                            </span>
+                            <span className="text-2xl font-mono font-black text-rose-400">{noPercent}%</span>
+                          </div>
+
+                          <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
+                            <div className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" style={{ width: `${noPercent}%` }}></div>
+                          </div>
+
+                          <div className="pt-1">
+                            {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', text2)}
+                          </div>
+                        </div>
+
+                        {/* ABSTAIN STAT */}
+                        <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              {label3}: {abstainVotesList.length} төлөөлөгч
+                            </span>
+                            <span className="text-2xl font-mono font-black text-amber-400">{abstainPercent}%</span>
+                          </div>
+
+                          <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
+                            <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]" style={{ width: `${abstainPercent}%` }}></div>
+                          </div>
+
+                          <div className="pt-1">
+                            {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', text3)}
+                          </div>
+                        </div>
                       </div>
-
-                      <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{ width: `${yesPercent}%` }}></div>
-                      </div>
-
-                      {/* Moving/Scrolling Names */}
-                      <div className="pt-1">
-                        {renderMarqueeLine(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20', 'Батлах')}
-                      </div>
-                    </div>
-
-                    {/* NO STAT */}
-                    <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-rose-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          👎 Татгалзах: {noVotesList.length} төлөөлөгч
-                        </span>
-                        <span className="text-2xl font-mono font-black text-rose-400">{noPercent}%</span>
-                      </div>
-
-                      <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-rose-500 to-rose-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" style={{ width: `${noPercent}%` }}></div>
-                      </div>
-
-                      <div className="pt-1">
-                        {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', 'Татгалзах')}
-                      </div>
-                    </div>
-
-                    {/* ABSTAIN STAT */}
-                    <div className="space-y-2 bg-blue-950/40 p-4 rounded-xl border border-blue-900/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-amber-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          ✍️ Санал гаргах: {abstainVotesList.length} төлөөлөгч
-                        </span>
-                        <span className="text-2xl font-mono font-black text-amber-400">{abstainPercent}%</span>
-                      </div>
-
-                      <div className="h-4 w-full bg-blue-950 rounded-full overflow-hidden border border-blue-900/60 shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]" style={{ width: `${abstainPercent}%` }}></div>
-                      </div>
-
-                      <div className="pt-1">
-                        {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', 'Санал гаргах')}
-                      </div>
-                    </div>
-
-                  </div>
+                    );
+                  })()}
 
                 </div>
               ) : meeting && meeting.votingArchive.length > 0 ? (

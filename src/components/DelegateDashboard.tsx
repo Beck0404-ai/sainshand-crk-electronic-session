@@ -258,37 +258,47 @@ export default function DelegateDashboard({
               <p className="text-xs text-slate-500 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 leading-relaxed mb-6">
                 ℹ️ Сайншанд сумын ИТХ-ын дэгийн дагуу таны өгсөн саналыг бодит хугацаанд заалны том дэлгэцэнд шууд нэгтгэн харуулах тул саналаа нягталж, хариуцлагатай сонголт хийнэ үү.
               </p>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Батлах')}
-                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
-                >
-                  <span className="text-xl">👍</span>
-                  <span>{submittingChoice === 'Батлах' ? 'Илгээж байна...' : 'Батлах'}</span>
-                </button>
+              {(() => {
+                const isResolutionVote = meeting.voting.title.includes('ТОГТООЛЫН ТӨСӨЛ');
+                const opt1Label = isResolutionVote ? 'Батлах' : 'Зөвшөөрсөн';
+                const opt2Label = isResolutionVote ? 'Татгалзах' : 'Татгалзсан';
+                const opt3Label = isResolutionVote ? 'Санал гаргах' : 'Түтгэлзсэн';
+                const opt3Icon  = isResolutionVote ? '✍️' : '✋';
 
-                <button
-                  type="button"
-                  disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Татгалзах')}
-                  className="bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
-                >
-                  <span className="text-xl">👎</span>
-                  <span>{submittingChoice === 'Татгалзах' ? 'Илгээж байна...' : 'Татгалзах'}</span>
-                </button>
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      disabled={submittingChoice !== null}
+                      onClick={() => handleDelegateVoteClick(opt1Label as any)}
+                      className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                    >
+                      <span className="text-xl">👍</span>
+                      <span>{submittingChoice === opt1Label ? 'Илгээж байна...' : opt1Label}</span>
+                    </button>
 
-                <button
-                  type="button"
-                  disabled={submittingChoice !== null}
-                  onClick={() => handleDelegateVoteClick('Санал гаргах')}
-                  className="bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
-                >
-                  <span className="text-xl">✍️</span>
-                  <span>{submittingChoice === 'Санал гаргах' ? 'Илгээж байна...' : 'Санал гаргах'}</span>
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      disabled={submittingChoice !== null}
+                      onClick={() => handleDelegateVoteClick(opt2Label as any)}
+                      className="bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                    >
+                      <span className="text-xl">👎</span>
+                      <span>{submittingChoice === opt2Label ? 'Илгээж байна...' : opt2Label}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={submittingChoice !== null}
+                      onClick={() => handleDelegateVoteClick(opt3Label as any)}
+                      className="bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-50 text-white font-bold py-3.5 px-3 rounded-xl transition flex flex-col items-center justify-center gap-1 cursor-pointer text-xs shadow-md"
+                    >
+                      <span className="text-xl">{opt3Icon}</span>
+                      <span>{submittingChoice === opt3Label ? 'Илгээж байна...' : opt3Label}</span>
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="mt-5 text-center text-[10px] text-slate-400 font-mono">
                 Сайншанд сумын ИТХ-ын Цахим хуралдааны технологийн нэгдсэн хяналт
               </div>
