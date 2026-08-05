@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Delegate, CRKMeeting } from '../types.js';
 import { User, Users, Clock, Vote, AlertCircle, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -16,6 +16,9 @@ interface ProjectorViewProps {
 }
 
 export default function ProjectorView({ meeting, delegates, onBackToAdmin }: ProjectorViewProps) {
+  // Theme state: High-Contrast Dark vs Executive Light
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
   // Audio chime effect triggers
   const prevSpeakerTimeRef = useRef<number | undefined>(undefined);
   const prevVotingActiveRef = useRef<boolean | undefined>(undefined);
@@ -113,7 +116,9 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
   };
 
   return (
-    <div className="bg-[#030c1e] text-slate-100 min-h-screen p-6 font-sans flex flex-col justify-between relative overflow-hidden" id="projector-big-screen">
+    <div className={`min-h-screen p-6 font-sans flex flex-col justify-between relative overflow-hidden transition-colors duration-300 ${
+      isDarkMode ? 'bg-[#030c1e] text-slate-100' : 'bg-slate-100 text-slate-900'
+    }`} id="projector-big-screen">
       {/* Dynamic Keyframes injected here for full cross-browser seamless scrolling ticker support */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {
@@ -131,16 +136,16 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
       `}} />
 
       {/* Decorative ambiance elements */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-[-20%] right-[-15%] w-[60%] h-[60%] bg-blue-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] pointer-events-none ${isDarkMode ? 'bg-blue-600/10' : 'bg-blue-500/5'}`}></div>
+      <div className={`absolute bottom-[-20%] right-[-15%] w-[60%] h-[60%] rounded-full blur-[140px] pointer-events-none ${isDarkMode ? 'bg-blue-500/5' : 'bg-indigo-500/5'}`}></div>
 
       {/* HEADER BAR FOR PROJECTOR PORTAL */}
-      <div className="border-b border-blue-900/60 pb-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 z-10 relative">
+      <div className={`border-b pb-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 z-10 relative ${isDarkMode ? 'border-blue-900/60' : 'border-slate-300'}`}>
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Сайншанд сумын лого" className="h-11 w-11 rounded-xl object-cover shadow-lg shadow-blue-500/20 flex-shrink-0" />
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-blue-400 font-mono">Сувгийн Танхимын Үзүүлэлт</span>
-            <h2 className="text-base md:text-lg font-extrabold text-white tracking-tight leading-tight">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-blue-500 font-mono">Сувгийн Танхимын Үзүүлэлт</span>
+            <h2 className={`text-base md:text-lg font-extrabold tracking-tight leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               Сайншанд сумын ИТХ-ын Цахим Танхим
             </h2>
           </div>
@@ -148,21 +153,39 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
 
         <div className="flex items-center gap-3">
           {meeting && (
-            <div className="bg-[#0b162c] border border-blue-800/80 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg shadow-black/30">
+            <div className={`px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg ${isDarkMode ? 'bg-[#0b162c] border border-blue-800/80 shadow-black/30' : 'bg-white border border-slate-300 shadow-slate-300/50'}`}>
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
               <div className="text-right">
-                <span className="text-[8px] text-blue-400 block uppercase font-mono tracking-wider font-extrabold">ИТДЭВХТЭЙ ХЭЛЭЛЦҮҮЛЭГ</span>
-                <span className="text-xs font-bold text-slate-100">{meeting.title}</span>
+                <span className="text-[8px] text-blue-500 block uppercase font-mono tracking-wider font-extrabold">ИТДЭВХТЭЙ ХЭЛЭЛЦҮҮЛЭГ</span>
+                <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{meeting.title}</span>
               </div>
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setIsDarkMode(prev => !prev)}
+            className={`flex items-center gap-2 text-[11px] font-bold px-3.5 py-2.5 rounded-xl border transition cursor-pointer shadow-md ${
+              isDarkMode 
+                ? 'bg-blue-950/80 hover:bg-blue-900 border-blue-700/60 text-blue-200' 
+                : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800'
+            }`}
+            title="Танхимын гэрэлтүүлгээс хамааран сэдэв сэлгэх"
+          >
+            {isDarkMode ? '☀️ Гэгээлэг (Light)' : '🌙 Харанхуй (Dark)'}
+          </button>
+
           <button
             type="button"
             onClick={onBackToAdmin}
-            className="flex items-center gap-2 bg-blue-900/60 hover:bg-blue-800/80 border border-blue-700/60 text-blue-200 hover:text-white text-[11px] font-bold px-3.5 py-2.5 rounded-xl transition cursor-pointer"
+            className={`flex items-center gap-2 text-[11px] font-bold px-3.5 py-2.5 rounded-xl border transition cursor-pointer ${
+              isDarkMode
+                ? 'bg-blue-900/60 hover:bg-blue-800/80 border-blue-700/60 text-blue-200 hover:text-white'
+                : 'bg-slate-900 hover:bg-slate-800 border-slate-900 text-white'
+            }`}
             title="Админ хэсэгрүү буцах"
           >
             <LayoutDashboard size={14} />
@@ -178,7 +201,11 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
         <div className="xl:col-span-4 flex flex-col gap-6 justify-between">
           
           {/* SPEAKER BOX */}
-          <div className="bg-[#0b162c] rounded-3xl border border-blue-900/60 p-6 flex flex-col justify-between flex-1 relative overflow-hidden shadow-2xl">
+          <div className={`rounded-3xl border p-6 flex flex-col justify-between flex-1 relative overflow-hidden transition-colors duration-300 ${
+            isDarkMode 
+              ? 'bg-[#0b162c] border-blue-900/60 shadow-2xl text-slate-100' 
+              : 'bg-white border-slate-300 text-slate-900 shadow-xl'
+          }`}>
             
             <div className="space-y-4">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2">
@@ -259,7 +286,11 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
         {/* CENTER COLUMN: LIVE VOTING (SPAN 5) */}
         <div className="xl:col-span-5 flex flex-col justify-between font-sans">
           
-          <div className="bg-[#0b162c] rounded-3xl border border-blue-900/60 p-6 flex flex-col justify-between flex-grow shadow-2xl relative overflow-hidden">
+          <div className={`rounded-3xl border p-6 flex flex-col justify-between flex-grow relative overflow-hidden transition-colors duration-300 ${
+            isDarkMode 
+              ? 'bg-[#0b162c] border-blue-900/60 shadow-2xl text-slate-100' 
+              : 'bg-white border-slate-300 text-slate-900 shadow-xl'
+          }`}>
             
             <div className="space-y-4">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2 mb-2">
@@ -484,7 +515,11 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
         {/* RIGHT COLUMN: CHAMBER ATTENDANCE MAP (SPAN 3) */}
         <div className="xl:col-span-3 flex flex-col justify-between">
           
-          <div className="bg-[#0b162c] rounded-3xl border border-blue-900/60 p-6 flex flex-col justify-between flex-grow shadow-2xl relative overflow-hidden">
+          <div className={`rounded-3xl border p-6 flex flex-col justify-between flex-grow relative overflow-hidden transition-colors duration-300 ${
+            isDarkMode 
+              ? 'bg-[#0b162c] border-blue-900/60 shadow-2xl text-slate-100' 
+              : 'bg-white border-slate-300 text-slate-900 shadow-xl'
+          }`}>
             
             <div className="space-y-3">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2 mb-2">
