@@ -67,7 +67,7 @@ export default function App() {
     }
   };
 
-  // Load state and poll for updates
+  // Load state and poll for updates with dynamic high-frequency interval
   useEffect(() => {
     let active = true;
 
@@ -87,13 +87,17 @@ export default function App() {
 
     setConnectionStatus('connecting');
     poll();
-    const pollInterval = setInterval(poll, 2000);
+
+    // High-frequency polling (300ms) during active voting or open attendance for zero delay!
+    const isHighFrequencyNeeded = appState?.meeting?.voting.active || appState?.meeting?.attendanceOpen;
+    const intervalMs = isHighFrequencyNeeded ? 300 : 1000;
+    const pollInterval = setInterval(poll, intervalMs);
 
     return () => {
       active = false;
       clearInterval(pollInterval);
     };
-  }, []);
+  }, [appState?.meeting?.voting.active, appState?.meeting?.attendanceOpen]);
 
   if (!appState) {
     return (
