@@ -490,8 +490,31 @@ export default function DelegateDashboard({
             </div>
           )}
 
+          {/* MEETING FINISHED BANNER FOR DELEGATES */}
+          {meeting?.status === 'дууссан' && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center space-y-4 animate-fadeIn">
+              <div className="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                <CheckCircle size={28} />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-700 block mb-1">
+                  ✓ ХУРАЛДААН АЛБАН ЁСООР ДУУССАН
+                </span>
+                <h3 className="text-xl font-black text-slate-900">{meeting.title}</h3>
+                <p className="text-xs text-slate-500 mt-1.5 font-medium">
+                  Ирцийн статус: <strong className={isCheckedIn ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>{isCheckedIn ? '✓ Ирц баталгаажсан' : 'Ирц бүртгүүлээгүй'}</strong> | 
+                  Хэлэлцсэн асуудал: <strong className="text-slate-800 font-bold">{meeting.agenda.length} сэдэв</strong> | 
+                  Санал асуулга: <strong className="text-purple-700 font-bold">{meeting.votingArchive.length} шийдвэр</strong>
+                </p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] text-slate-500 font-mono inline-block">
+                ℹ️ Хуралдаан дууссан бөгөөд та доорх хэсгээс материалууд болон хувийн тэмдэглэлээ үзэх боломжтой.
+              </div>
+            </div>
+          )}
+
           {/* SPEAKER QUEUE ACTION PANEL */}
-          {meeting && isCheckedIn && (
+          {meeting && meeting.status !== 'дууссан' && isCheckedIn && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Volume2 className="text-blue-600 flex-shrink-0 animate-pulse" size={20} />
@@ -748,7 +771,7 @@ export default function DelegateDashboard({
           )}
 
           {/* SPEAKER QUEUE LIST */}
-          {meeting && (
+          {meeting && meeting.status !== 'дууссан' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
               <h4 className="font-bold text-slate-800 text-xs mb-4 flex items-center gap-2 uppercase tracking-wide">
                 <Users size={14} className="text-blue-600" /> Үг хэлэхээр дарааллд буй төлөөлөгчид ({meeting.speakerQueue.length})
@@ -833,7 +856,7 @@ export default function DelegateDashboard({
           </div>
 
           {/* ҮГ ХЭЛЖ БУЙ — жижиг */}
-          {meeting && (
+          {meeting && meeting.status !== 'дууссан' && (
             <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
               <h4 className="text-[8px] text-blue-600 font-mono font-bold uppercase tracking-widest mb-2 flex items-center gap-1">
                 <Clock size={10} className="animate-pulse" /> Үг хэлж буй
