@@ -150,7 +150,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                             ? 'bg-emerald-100 text-emerald-800 print:bg-white print:border print:border-emerald-800' 
                             : 'bg-rose-100 text-rose-800 print:bg-white print:border print:border-rose-800'
                         }`}>
-                          {isPassed ? 'БАТАЛСАН' : 'ДЭМЖИГДЭЭГҮЙ'}
+                          {v.title.includes('ТОГТООЛЫН ТӨСӨЛ') 
+                            ? (isPassed ? '📜 ТОГТООЛ БАТЛАГДЛАА' : '📜 ТОГТООЛ ТАТГАЛЗАГДЛАА') 
+                            : (isPassed ? 'БАТАЛСАН' : 'ДЭМЖИГДЭЭГҮЙ')}
                         </span>
                       </div>
                       

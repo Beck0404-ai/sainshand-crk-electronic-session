@@ -228,9 +228,15 @@ export default function DelegateDashboard({
               className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-xl relative text-slate-800"
             >
               <div className="flex items-center justify-between gap-4 mb-3">
-                <div className="flex items-center gap-2.5 text-blue-600">
+                <div className="flex items-center gap-2 text-blue-600">
                   <AlertTriangle className="animate-pulse" size={20} />
-                  <span className="text-[10px] uppercase font-mono font-bold tracking-wider">Шууд санал хураалт</span>
+                  <span className={`text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full border ${
+                    meeting.voting.title.includes('ТОГТООЛЫН ТӨСӨЛ')
+                      ? 'bg-amber-100 text-amber-900 border-amber-300'
+                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                  }`}>
+                    {meeting.voting.title.includes('ТОГТООЛЫН ТӨСӨЛ') ? '📜 ТОГТООЛЫН ТӨСӨЛ ЭЦЭСЛЭН БАТЛАХ' : 'Шууд санал хураалт'}
+                  </span>
                 </div>
                 {meeting.voting.remainingSeconds !== undefined && (
                   <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full ${

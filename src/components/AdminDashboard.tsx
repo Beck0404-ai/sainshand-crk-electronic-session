@@ -1004,12 +1004,26 @@ export default function AdminDashboard({
                           </select>
                         </div>
 
-                        <button
-                          onClick={() => onStartVoting(meeting.activeAgendaItemId || 'agenda-01', votingTitle)}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition cursor-pointer"
-                        >
-                          Санал хураалт эхлүүлэх
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => onStartVoting(meeting.activeAgendaItemId || 'agenda-01', votingTitle || 'Зарчмын зөрүүтэй санал хураалт')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                          >
+                            🗳️ Энгийн санал хураалт
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const activeItem = meeting.agenda.find(ag => ag.id === (meeting.activeAgendaItemId || 'agenda-01'));
+                              const title = activeItem ? `📜 ТОГТООЛЫН ТӨСӨЛ БАТЛАХ: ${activeItem.title}` : `📜 ТОГТООЛЫН ТӨСӨЛ БАТЛАХ`;
+                              onStartVoting(meeting.activeAgendaItemId || 'agenda-01', title);
+                            }}
+                            className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                          >
+                            📜 Тогтоолын төсөл батлах
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
