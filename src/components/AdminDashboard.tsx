@@ -8,8 +8,10 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaItem, AgendaMaterial, Vot
 import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
-  Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw
+  Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw,
+  Search, Filter, Printer, Clock
 } from 'lucide-react';
+import PrintReportModal from './PrintReportModal';
 
 interface AdminDashboardProps {
   meeting: CRKMeeting | null;
@@ -72,6 +74,14 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Navigation Tabs for Sub-panels
   const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports'>('control');
+  
+  // Search & Filter state for delegates tab
+  const [delegateSearch, setDelegateSearch] = useState('');
+  const [partyFilter, setPartyFilter] = useState('ALL');
+  const [districtFilter, setDistrictFilter] = useState('ALL');
+
+  // Print Report Modal state
+  const [showPrintModal, setShowPrintModal] = useState(false);
   
   // Create meeting inputs
   const [newTitle, setNewTitle] = useState('');
@@ -420,7 +430,8 @@ export default function AdminDashboard({
   };
 
   const presentDelegatesCount = meeting ? Object.keys(meeting.attendance).length : 0;
-  const attendancePercentage = meeting ? Math.round((presentDelegatesCount / allDelegates.length) * 100) : 0;
+  const attendancePercentage = meeting && allDelegates.length > 0 ? Math.round((presentDelegatesCount / allDelegates.length) * 100) : 0;
+  const isQuorumReached = attendancePercentage >= 50;
 
   // Render timer label
   const formatSeconds = (totalSecs: number) => {
@@ -712,9 +723,14 @@ export default function AdminDashboard({
                       </strong>
                     </div>
 
-                    <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center">
+                    <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center space-y-1.5">
                       <span className="block text-2xl font-bold font-mono text-slate-850">{presentDelegatesCount} / {allDelegates.length}</span>
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Бүртгүүлсэн төлөөлөгч ({attendancePercentage}%)</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Бүртгүүлсэн төлөөлөгч ({attendancePercentage}%)</span>
+                      <div className={`mt-2 p-1.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1 ${
+                        isQuorumReached ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'
+                      }`}>
+                        <span>{isQuorumReached ? '✓ Ирцийн Кворум БҮРДСЭН (50%+1)' : '⚠️ Кворум ХҮРЭЭГҮЙ'}</span>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -733,6 +749,14 @@ export default function AdminDashboard({
                         Хаах
                       </button>
                     </div>
+
+                    <button
+                      onClick={() => setShowPrintModal(true)}
+                      className="w-full mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <Printer size={14} className="text-blue-400" />
+                      📄 Хурлын Протокол Хэвлэх / PDF
+                    </button>
                   </div>
                 </div>
 
@@ -808,12 +832,23 @@ export default function AdminDashboard({
                           )}
                         </div>
 
-                        <button
-                          onClick={onStopVoting}
-                          className="w-full bg-rose-605 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition cursor-pointer"
-                        >
-                          Санал хураалт унтраах / Нийтлэх
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onStartVoting(meeting.activeAgendaItemId || 'agenda-01', meeting.voting.title)}
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 border border-slate-200"
+                            title="Санал хураалтын хугацааг 30 секундээр дахин сунгах"
+                          >
+                            <Clock size={12} className="text-blue-600" /> +30сек сунгах
+                          </button>
+                          <button
+                            type="button"
+                            onClick={onStopVoting}
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition cursor-pointer"
+                          >
+                            Дуусгах / Нийтлэх
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-3.5">
@@ -1168,6 +1203,47 @@ export default function AdminDashboard({
             </form>
           )}
 
+          {/* SEARCH & FILTER BAR */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div className="flex-1 relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={delegateSearch}
+                onChange={(e) => setDelegateSearch(e.target.value)}
+                placeholder="Төлөөлөгчийг нэр, нэвтрэх нэр, утасаар хайх..."
+                className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Filter size={14} className="text-slate-400" />
+              <select
+                value={partyFilter}
+                onChange={(e) => setPartyFilter(e.target.value)}
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none cursor-pointer font-medium"
+              >
+                <option value="ALL">Бүх Нам/Бүлэг</option>
+                <option value="МАН">МАН</option>
+                <option value="АН">АН</option>
+                <option value="ХҮН">ХҮН</option>
+                <option value="Бяраа">Бяраа</option>
+                <option value="Бие даагч">Бие даагч</option>
+              </select>
+
+              <select
+                value={districtFilter}
+                onChange={(e) => setDistrictFilter(e.target.value)}
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none cursor-pointer font-medium"
+              >
+                <option value="ALL">Бүх Тойрог баг</option>
+                {Array.from(new Set(allDelegates.map(d => d.district))).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
@@ -1181,7 +1257,15 @@ export default function AdminDashboard({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-150">
-                {allDelegates.map((d) => {
+                {allDelegates
+                  .filter(d => {
+                    const q = delegateSearch.toLowerCase();
+                    const matchQ = d.fullName.toLowerCase().includes(q) || d.username.toLowerCase().includes(q) || d.phone.includes(q);
+                    const matchP = partyFilter === 'ALL' || d.party === partyFilter;
+                    const matchD = districtFilter === 'ALL' || d.district === districtFilter;
+                    return matchQ && matchP && matchD;
+                  })
+                  .map((d) => {
                   const isPresent = meeting ? !!meeting.attendance[d.id] : false;
                   return (
                     <tr key={d.id} className="hover:bg-slate-50/50">
@@ -1685,8 +1769,15 @@ export default function AdminDashboard({
               </div>
             </div>
           )}
-
         </div>
+      )}
+
+      {showPrintModal && meeting && (
+        <PrintReportModal
+          meeting={meeting}
+          delegates={allDelegates}
+          onClose={() => setShowPrintModal(false)}
+        />
       )}
 
     </div>

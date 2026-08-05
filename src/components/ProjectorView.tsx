@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Delegate, CRKMeeting } from '../types.js';
 import { User, Users, Clock, Vote, AlertCircle, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { playTimerEndSound, playVoteStartSound } from '../utils/soundUtils';
 
 interface ProjectorViewProps {
   meeting: CRKMeeting | null;
@@ -15,6 +16,10 @@ interface ProjectorViewProps {
 }
 
 export default function ProjectorView({ meeting, delegates, onBackToAdmin }: ProjectorViewProps) {
+  // Audio chime effect triggers
+  const prevSpeakerTimeRef = useRef<number | undefined>(undefined);
+  const prevVotingActiveRef = useRef<boolean | undefined>(undefined);
+
   // Aggregate statistics
   const presentCount = meeting ? Object.keys(meeting.attendance).length : 0;
   const totalCount = delegates.length;
@@ -29,6 +34,20 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
 
   // Voting analysis
   const isVotingActive = meeting?.voting.active;
+
+  useEffect(() => {
+    if (activeSpeaker?.remainingSeconds === 0 && prevSpeakerTimeRef.current !== 0 && prevSpeakerTimeRef.current !== undefined) {
+      playTimerEndSound();
+    }
+    prevSpeakerTimeRef.current = activeSpeaker?.remainingSeconds;
+  }, [activeSpeaker?.remainingSeconds]);
+
+  useEffect(() => {
+    if (isVotingActive && !prevVotingActiveRef.current) {
+      playVoteStartSound();
+    }
+    prevVotingActiveRef.current = isVotingActive;
+  }, [isVotingActive]);
   const votes = meeting?.voting.votes || {};
   const votedCount = Object.keys(votes).length;
 
