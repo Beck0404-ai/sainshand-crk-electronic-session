@@ -885,21 +885,45 @@ export default function AdminDashboard({
                           <div className="text-slate-600 mt-1">{meeting.voting.title}</div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                            Санал: <strong className="text-rose-600 font-bold">{Object.keys(meeting.voting.votes).length}</strong>/{presentDelegatesCount}
-                          </div>
-                          <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 text-amber-700">
-                            ✋ <strong>{Object.values(meeting.voting.votes).filter(v => v.choice === 'Түтгэлзсэн').length}</strong>
-                          </div>
-                          {meeting.voting.remainingSeconds !== undefined && (
-                            <div className={`p-2.5 rounded-lg border ${
-                              meeting.voting.remainingSeconds <= 15 ? 'bg-rose-50 border-rose-200 text-rose-700 animate-pulse font-bold' : 'bg-slate-50 border-slate-200 text-slate-705 font-bold'
-                            }`}>
-                              Хугацаа: <strong className="font-bold">{meeting.voting.remainingSeconds}с</strong>
+                        {(() => {
+                          const votes = Object.values(meeting.voting.votes);
+                          const totalVotes = votes.length;
+                          const yesCount = votes.filter(v => v.choice === 'Зөвшөөрсөн').length;
+                          const noCount = votes.filter(v => v.choice === 'Татгалзсан').length;
+                          const abstainCount = votes.filter(v => v.choice === 'Түтгэлзсэн').length;
+
+                          const yesPct = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
+                          const noPct = totalVotes > 0 ? Math.round((noCount / totalVotes) * 100) : 0;
+                          const abstainPct = totalVotes > 0 ? Math.round((abstainCount / totalVotes) * 100) : 0;
+
+                          return (
+                            <div className="space-y-2 font-mono text-xs">
+                              <div className="flex items-center justify-between text-[11px] text-slate-600 font-bold border-b border-slate-150 pb-1">
+                                <span>Өгсөн санал: <strong>{totalVotes} / {presentDelegatesCount}</strong></span>
+                                {meeting.voting.remainingSeconds !== undefined && (
+                                  <span className={`font-bold ${meeting.voting.remainingSeconds <= 15 ? 'text-rose-600 animate-pulse' : 'text-blue-600'}`}>
+                                    ⏱️ {meeting.voting.remainingSeconds}с
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-emerald-800 shadow-sm">
+                                  <div className="text-[10px] font-sans font-bold">👍 Зөвшөөрсөн</div>
+                                  <div className="text-sm font-black mt-0.5">{yesCount} <span className="text-[10px] text-emerald-600 font-bold">({yesPct}%)</span></div>
+                                </div>
+                                <div className="bg-rose-50 border border-rose-200 p-2 rounded-xl text-rose-800 shadow-sm">
+                                  <div className="text-[10px] font-sans font-bold">👎 Татгалзсан</div>
+                                  <div className="text-sm font-black mt-0.5">{noCount} <span className="text-[10px] text-rose-600 font-bold">({noPct}%)</span></div>
+                                </div>
+                                <div className="bg-amber-50 border border-amber-200 p-2 rounded-xl text-amber-800 shadow-sm">
+                                  <div className="text-[10px] font-sans font-bold">✋ Түтгэлзсэн</div>
+                                  <div className="text-sm font-black mt-0.5">{abstainCount} <span className="text-[10px] text-amber-600 font-bold">({abstainPct}%)</span></div>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          );
+                        })()}
 
                         <div className="flex gap-2">
                           <button

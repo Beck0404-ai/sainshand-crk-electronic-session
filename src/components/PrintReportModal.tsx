@@ -132,6 +132,11 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   const yesCount = votes.filter(x => x.choice === 'Зөвшөөрсөн').length;
                   const noCount = votes.filter(x => x.choice === 'Татгалзсан').length;
                   const passCount = votes.filter(x => x.choice === 'Түтгэлзсэн').length;
+                  const totalCast = yesCount + noCount + passCount;
+                  
+                  const yesPct = totalCast > 0 ? Math.round((yesCount / totalCast) * 100) : 0;
+                  const noPct = totalCast > 0 ? Math.round((noCount / totalCast) * 100) : 0;
+                  const passPct = totalCast > 0 ? Math.round((passCount / totalCast) * 100) : 0;
                   const isPassed = yesCount > (v.totalPresent / 2);
 
                   return (
@@ -152,15 +157,15 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                       <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-center">
                         <div className="p-2 bg-emerald-50 print:bg-white border border-emerald-200 rounded-lg flex items-center justify-center gap-1 text-emerald-800">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 print:hidden" />
-                          Зөвшөөрсөн: {yesCount}
+                          <span>Зөвшөөрсөн: <strong>{yesCount} ({yesPct}%)</strong></span>
                         </div>
                         <div className="p-2 bg-rose-50 print:bg-white border border-rose-200 rounded-lg flex items-center justify-center gap-1 text-rose-800">
                           <XCircle className="w-4 h-4 text-rose-600 print:hidden" />
-                          Татгалзсан: {noCount}
+                          <span>Татгалзсан: <strong>{noCount} ({noPct}%)</strong></span>
                         </div>
                         <div className="p-2 bg-amber-50 print:bg-white border border-amber-200 rounded-lg flex items-center justify-center gap-1 text-amber-800">
                           <MinusCircle className="w-4 h-4 text-amber-600 print:hidden" />
-                          Түтгэлзсэн: {passCount}
+                          <span>Түтгэлзсэн: <strong>{passCount} ({passPct}%)</strong></span>
                         </div>
                       </div>
                     </div>
