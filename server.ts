@@ -809,11 +809,18 @@ app.post('/api/admin/notification/delete', async (req: Request, res: Response) =
 
 // Delete single or selected voting archive items (Admin Tool)
 app.post('/api/admin/voting-archive/delete', async (req: Request, res: Response) => {
-  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { id, ids } = req.body;
   const targetIds: string[] = ids ? ids : id ? [id] : [];
-  serverMeeting.votingArchive = serverMeeting.votingArchive.filter(v => !targetIds.includes(v.id));
-  await dbSave('meeting', serverMeeting);
+  
+  if (!serverMeeting) {
+    const mtg = await dbLoad<CRKMeeting>('meeting');
+    if (mtg) serverMeeting = mtg;
+  }
+
+  if (serverMeeting) {
+    serverMeeting.votingArchive = (serverMeeting.votingArchive || []).filter(v => !targetIds.includes(v.id));
+    await dbSave('meeting', serverMeeting);
+  }
   broadcastState();
   res.json({ success: true });
 });
@@ -834,6 +841,11 @@ app.post('/api/system/reset', async (req: Request, res: Response) => {
 
 // Clear all archives (voting archives, test notifications, speaker queue) while keeping current meeting intact
 app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
+  if (!serverMeeting) {
+    const mtg = await dbLoad<CRKMeeting>('meeting');
+    if (mtg) serverMeeting = mtg;
+  }
+
   if (serverMeeting) {
     serverMeeting.votingArchive = [];
     serverMeeting.voting = {

@@ -118,13 +118,16 @@ export default function AdminDashboard({
 
   const handleDeleteSingleVoteArchive = async (id: string) => {
     if (!confirm('Энэ санал хураалтын архивыг устгах уу?')) return;
+    if (meeting) {
+      meeting.votingArchive = meeting.votingArchive.filter(v => v.id !== id);
+    }
+    setSelectedVoteArchiveIds(prev => prev.filter(x => x !== id));
     const res = await fetch('/api/admin/voting-archive/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
     if (res.ok) {
-      setSelectedVoteArchiveIds(prev => prev.filter(x => x !== id));
       if (onRefreshState) await onRefreshState();
     } else {
       const data = await res.json();
@@ -135,13 +138,17 @@ export default function AdminDashboard({
   const handleDeleteSelectedVoteArchives = async () => {
     if (selectedVoteArchiveIds.length === 0) return;
     if (!confirm(`Сонгосон ${selectedVoteArchiveIds.length} санал хураалтын архивыг устгах уу?`)) return;
+    if (meeting) {
+      meeting.votingArchive = meeting.votingArchive.filter(v => !selectedVoteArchiveIds.includes(v.id));
+    }
+    const targetIds = [...selectedVoteArchiveIds];
+    setSelectedVoteArchiveIds([]);
     const res = await fetch('/api/admin/voting-archive/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: selectedVoteArchiveIds })
+      body: JSON.stringify({ ids: targetIds })
     });
     if (res.ok) {
-      setSelectedVoteArchiveIds([]);
       if (onRefreshState) await onRefreshState();
     } else {
       const data = await res.json();
@@ -151,10 +158,13 @@ export default function AdminDashboard({
 
   const handleCleanAllArchives = async () => {
     if (!confirm('Бүх санал хураалтын архив болон мэдэгдлүүдийг цэвэрлэж шинэ болоход итгэлтэй байна уу?')) return;
+    if (meeting) {
+      meeting.votingArchive = [];
+    }
+    setSelectedVoteArchiveIds([]);
+    setSelectedNotifIds([]);
     const res = await fetch('/api/admin/clean-archives', { method: 'POST' });
     if (res.ok) {
-      setSelectedVoteArchiveIds([]);
-      setSelectedNotifIds([]);
       if (onRefreshState) await onRefreshState();
       alert('✓ Бүх санал хураалтын архив, мэдэгдлүүдийг бүрэн цэвэрлэж шинэчиллээ.');
     } else {
