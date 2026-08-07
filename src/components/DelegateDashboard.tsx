@@ -8,7 +8,7 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaMaterial } from '../types
 import {
   CheckCircle, Clock, Volume2, AlertTriangle, FileText,
   Download, Users, BookOpen, CheckSquare, History, Bell, Mail, Phone, ArrowRight,
-  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save
+  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -45,6 +45,52 @@ export default function DelegateDashboard({
   const [profilePhone, setProfilePhone] = useState(delegate.phone);
   const [profileEmail, setProfileEmail] = useState(delegate.email);
   const [profileBio, setProfileBio] = useState(delegate.bio || '');
+
+  // Delegate Profile Modal States
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileTab, setProfileTab] = useState<'info' | 'stats' | 'security'>('info');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [profileToast, setProfileToast] = useState<string | null>(null);
+
+  const showProfileToastMsg = (msg: string) => {
+    setProfileToast(msg);
+    setTimeout(() => setProfileToast(null), 3500);
+  };
+
+  const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPasswordInput || newPasswordInput.length < 3) {
+      alert('Нууц үг доод тал нь 3 тэмдэгттэй байна.');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      alert('Шинэ нууц үгүүд хоорондоо тарахгүй байна.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch('/api/admin/delegate/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delegateId: delegate.id, newPassword: newPasswordInput })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showProfileToastMsg('✓ Нууц үг амжилттай солигдлоо!');
+        setNewPasswordInput('');
+        setConfirmPasswordInput('');
+      } else {
+        alert(data.error || 'Нууц үг солиход алдаа гарлаа.');
+      }
+    } catch {
+      alert('Сервэртэй холбогдоход алдаа гарлаа.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const [pdfViewer, setPdfViewer] = useState<AgendaMaterial | null>(null);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
@@ -514,6 +560,50 @@ export default function DelegateDashboard({
         {/* MAIN AREA COL_SPAN_9 */}
         <div className="lg:col-span-9 space-y-5">
 
+          {/* DELEGATE EXECUTIVE PROFILE BANNER */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-4 text-center sm:text-left min-w-0">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
+                {delegate.fullName.substring(0, 2)}
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
+                  <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full border border-blue-150">
+                    Төлөөлөгч · {delegate.id.toUpperCase()}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    delegate.party === 'МАН' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                    delegate.party === 'АН' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    delegate.party === 'ХҮН' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    {delegate.party}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    📍 {delegate.district}
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight truncate">
+                  {delegate.fullName}
+                </h2>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  📞 {delegate.phone} · 📧 {delegate.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center">
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
+              >
+                <User size={15} className="text-blue-400" />
+                <span>Миний профайл</span>
+              </button>
+            </div>
+          </div>
+
           {/* VOTED BANNER */}
           {meeting?.voting.active && hasVoted && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
@@ -931,6 +1021,282 @@ export default function DelegateDashboard({
         </div>
 
       </div>
+
+      {/* DELEGATE EXECUTIVE PROFILE MODAL */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full overflow-hidden shadow-2xl text-slate-800 flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="bg-slate-900 text-white px-6 py-5 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-blue-600/30 text-blue-400 rounded-xl flex items-center justify-center border border-blue-500/30">
+                    <User size={22} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-widest block">САЙНШАНД СУМЫН ИТХ</span>
+                    <h3 className="text-base font-bold text-white">Төлөөлөгчийн Хувийн Хэрэг & Профайл</h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="h-8 w-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Toast banner inside profile */}
+              {profileToast && (
+                <div className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 text-center animate-fadeIn">
+                  {profileToast}
+                </div>
+              )}
+
+              {/* Content scrollable */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                
+                {/* Identity banner */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-2xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
+                    {delegate.fullName.substring(0, 2)}
+                  </div>
+                  <div className="space-y-1 text-center sm:text-left flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <span className="text-xs font-mono font-bold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200">
+                        {delegate.id.toUpperCase()}
+                      </span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                        delegate.party === 'МАН' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                        delegate.party === 'АН' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                        delegate.party === 'ХҮН' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                        'bg-slate-200 text-slate-800 border-slate-300'
+                      }`}>
+                        {delegate.party}
+                      </span>
+                      <span className="text-xs font-bold text-slate-700 bg-slate-200/70 px-2.5 py-0.5 rounded-full border border-slate-300">
+                        📍 {delegate.district}
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-black text-slate-900 leading-tight">{delegate.fullName}</h2>
+                    <p className="text-xs text-slate-500 font-mono">Нэвтрэх нэр: @{delegate.username}</p>
+                  </div>
+                </div>
+
+                {/* Profile Tabs */}
+                <div className="flex border-b border-slate-200 font-bold text-xs gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setProfileTab('info')}
+                    className={`pb-3 px-1 transition border-b-2 cursor-pointer ${
+                      profileTab === 'info' ? 'border-blue-600 text-blue-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    📋 Үндсэн мэдээлэл
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileTab('stats')}
+                    className={`pb-3 px-1 transition border-b-2 cursor-pointer ${
+                      profileTab === 'stats' ? 'border-blue-600 text-blue-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    📊 Идэвхжүүлэлт & Ирц
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileTab('security')}
+                    className={`pb-3 px-1 transition border-b-2 cursor-pointer ${
+                      profileTab === 'security' ? 'border-blue-600 text-blue-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    🔑 Нууц үг солих
+                  </button>
+                </div>
+
+                {/* TAB 1: INFO & EDIT */}
+                {profileTab === 'info' && (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingProfile(true);
+                    try {
+                      await onUpdateProfile({ phone: profilePhone, email: profileEmail, bio: profileBio });
+                      showProfileToastMsg('✓ Мэдээлэл амжилттай хадгалагдлаа!');
+                    } catch {
+                      alert('Хадгалахад алдаа гарлаа.');
+                    } finally {
+                      setIsSavingProfile(false);
+                    }
+                  }} className="space-y-4 text-xs">
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                          <Phone size={13} className="text-blue-600" /> Утасны дугаар
+                        </label>
+                        <input
+                          type="text"
+                          value={profilePhone}
+                          onChange={(e) => setProfilePhone(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-mono text-slate-800 font-bold"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                          <Mail size={13} className="text-blue-600" /> И-мэйл хаяг
+                        </label>
+                        <input
+                          type="email"
+                          value={profileEmail}
+                          onChange={(e) => setProfileEmail(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-800 font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <FileEdit size={13} className="text-blue-600" /> Төлөөлөгчийн зарчим, товч танилцуулга (Bio)
+                      </label>
+                      <textarea
+                        value={profileBio}
+                        onChange={(e) => setProfileBio(e.target.value)}
+                        rows={3}
+                        placeholder="Төлөөлөгчийн баримтлах зарчим, ажлын товч туршлага..."
+                        className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-800 resize-none font-sans leading-relaxed"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSavingProfile}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Save size={14} />
+                      {isSavingProfile ? 'Хадгалж байна...' : 'Мэдээллийг Хадгалах'}
+                    </button>
+                  </form>
+                )}
+
+                {/* TAB 2: STATS */}
+                {profileTab === 'stats' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                      <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl">
+                        <span className="block text-2xl font-black text-blue-700 font-mono">{delegate.attendedMeetingsCount}</span>
+                        <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider mt-1 block">Оролцсон хурал</span>
+                      </div>
+                      <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl">
+                        <span className="block text-2xl font-black text-emerald-700 font-mono">{delegate.votesCastCount}</span>
+                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider mt-1 block">Өгсөн санал</span>
+                      </div>
+                      <div className="bg-purple-50 border border-purple-200 p-3.5 rounded-2xl">
+                        <span className="block text-2xl font-black text-purple-700 font-mono">96%</span>
+                        <span className="text-[10px] font-bold text-purple-800 uppercase tracking-wider mt-1 block">Ирцийн хувь</span>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl">
+                        <span className="block text-2xl font-black text-amber-700 font-mono">{Object.keys(materialNotes).length}</span>
+                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mt-1 block">Хувийн тэмдэглэл</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2 text-xs">
+                      <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                        <CheckSquare size={14} className="text-blue-600" /> Одоогийн хуралдааны ирцийн төлөв
+                      </h4>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-slate-600">Одоогийн хурал:</span>
+                        <strong className="text-slate-900 font-bold">{meeting ? meeting.title : 'Хуралгүй'}</strong>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                        <span className="text-slate-600">Ирцийн бүртгэл:</span>
+                        <span className={`font-bold px-2.5 py-0.5 rounded-full ${
+                          isCheckedIn ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {isCheckedIn ? '✓ Баталгаажсан (Ирсэн)' : 'Бүртгүүлээгүй'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: SECURITY & CHANGE PASSWORD */}
+                {profileTab === 'security' && (
+                  <form onSubmit={handlePasswordChangeSubmit} className="space-y-4 text-xs">
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-1">
+                      <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                        <Lock size={14} className="text-blue-600" /> Аюулгүй байдал & Нууц үг
+                      </h4>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Системд нэвтрэх нууц үгээ эндээс шууд шинэчлэх боломжтой. Нууц үгээ хариуцлагатай хадгална уу.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Шинэ нууц үг оруулна уу</label>
+                      <input
+                        type="password"
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        placeholder="Шинэ нууц үг"
+                        className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-mono text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Шинэ нууц үг дахин оруулна уу</label>
+                      <input
+                        type="password"
+                        value={confirmPasswordInput}
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        placeholder="Шинэ нууц үг баталгаажуулах"
+                        className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-mono text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isChangingPassword}
+                      className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Lock size={14} />
+                      {isChangingPassword ? 'Шинэчилж байна...' : 'Нууц үгийг Шинэчлэх'}
+                    </button>
+                  </form>
+                )}
+
+              </div>
+
+              {/* Footer */}
+              <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 text-center flex items-center justify-between text-[10px] text-slate-400 font-mono flex-shrink-0">
+                <span>🔒 Сайншанд сумын ИТХ-ын Төлөөлөгчийн Баталгаажсан Баримт</span>
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  Хаах
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
