@@ -82,6 +82,52 @@ export default function AdminDashboard({
 
   // Print Report Modal state
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Deletion selection states
+  const [selectedNotifIds, setSelectedNotifIds] = useState<string[]>([]);
+  const [selectedVoteArchiveIds, setSelectedVoteArchiveIds] = useState<string[]>([]);
+
+  const handleDeleteSingleNotification = async (id: string) => {
+    if (!confirm('Энэ мэдэгдлийг устгах уу?')) return;
+    await fetch('/api/admin/notification/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    setSelectedNotifIds(prev => prev.filter(x => x !== id));
+  };
+
+  const handleDeleteSelectedNotifications = async () => {
+    if (selectedNotifIds.length === 0) return;
+    if (!confirm(`Сонгосон ${selectedNotifIds.length} мэдэгдлийг устгах уу?`)) return;
+    await fetch('/api/admin/notification/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selectedNotifIds })
+    });
+    setSelectedNotifIds([]);
+  };
+
+  const handleDeleteSingleVoteArchive = async (id: string) => {
+    if (!confirm('Энэ санал хураалтын архивыг устгах уу?')) return;
+    await fetch('/api/admin/voting-archive/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    setSelectedVoteArchiveIds(prev => prev.filter(x => x !== id));
+  };
+
+  const handleDeleteSelectedVoteArchives = async () => {
+    if (selectedVoteArchiveIds.length === 0) return;
+    if (!confirm(`Сонгосон ${selectedVoteArchiveIds.length} санал хураалтын архивыг устгах уу?`)) return;
+    await fetch('/api/admin/voting-archive/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selectedVoteArchiveIds })
+    });
+    setSelectedVoteArchiveIds([]);
+  };
   
   // Create meeting inputs
   const [newTitle, setNewTitle] = useState('');
@@ -1844,44 +1890,94 @@ export default function AdminDashboard({
           </div>
 
           {/* NOTIFICATIONS SECTION */}
-          <div className="border-t border-slate-200 pt-5">
-            <div className="flex items-center justify-between mb-3">
+          <div className="border-t border-slate-200 pt-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>🔔</span> Мэдэгдлийн жагсаалт ({notifications.length})
               </h4>
-              {notifications.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => { if (confirm('Бүх мэдэгдлийг цэвэрлэх үү?')) onClearNotifications(); }}
-                  className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <RotateCcw size={12} /> Бүгдийг цэвэрлэх
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedNotifIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelectedNotifications}
+                    className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Trash2 size={12} /> Сонгосныг устгах ({selectedNotifIds.length})
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { if (confirm('Бүх мэдэгдлийг цэвэрлэх үү?')) onClearNotifications(); }}
+                    className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RotateCcw size={12} /> Бүгдийг цэвэрлэх
+                  </button>
+                )}
+              </div>
             </div>
+
             {notifications.length === 0 ? (
               <p className="text-xs text-slate-400 italic text-center py-4">Мэдэгдэл байхгүй байна.</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {[...notifications].reverse().map(n => (
-                  <div key={n.id} className={`p-3 rounded-xl border text-xs ${n.isRead ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className="font-bold text-slate-800">{n.title}</span>
-                      <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{new Date(n.timestamp).toLocaleTimeString()}</span>
+                {[...notifications].reverse().map(n => {
+                  const isChecked = selectedNotifIds.includes(n.id);
+                  return (
+                    <div
+                      key={n.id}
+                      className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 transition ${
+                        isChecked ? 'bg-rose-50/70 border-rose-300' : n.isRead ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedNotifIds(prev => [...prev, n.id]);
+                          else setSelectedNotifIds(prev => prev.filter(x => x !== n.id));
+                        }}
+                        className="mt-0.5 h-4 w-4 text-blue-600 rounded border-slate-300 cursor-pointer flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span className="font-bold text-slate-800">{n.title}</span>
+                          <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{new Date(n.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <p className="text-slate-500 leading-normal">{n.message}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSingleNotification(n.id)}
+                        title="Энэ мэдэгдлийг устгах"
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer flex-shrink-0"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
-                    <p className="text-slate-500 leading-normal">{n.message}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* VOTING ARCHIVE */}
           {meeting && meeting.votingArchive.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2">
-                <CheckCircle size={15} className="text-blue-600" /> Санал хураалтын архив ({meeting.votingArchive.length})
-              </h4>
+            <div className="space-y-3 pt-3 border-t border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <CheckCircle size={15} className="text-blue-600" /> Санал хураалтын архив ({meeting.votingArchive.length})
+                </h4>
+                {selectedVoteArchiveIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelectedVoteArchives}
+                    className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Trash2 size={12} /> Сонгосон санал хураалтыг устгах ({selectedVoteArchiveIds.length})
+                  </button>
+                )}
+              </div>
 
               <div className="space-y-3">
                 {[...meeting.votingArchive].reverse().map((item: VotingArchiveItem, idx) => {
@@ -1893,24 +1989,52 @@ export default function AdminDashboard({
                   const noPct  = total > 0 ? Math.round((noIds.length  / total) * 100) : 0;
                   const abstainPct = total > 0 ? Math.round((abstainIds.length / total) * 100) : 0;
                   const passed = yesIds.length > noIds.length;
+                  const isChecked = selectedVoteArchiveIds.includes(item.id);
 
                   return (
-                    <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div
+                      key={item.id}
+                      className={`border rounded-xl p-4 space-y-3 transition ${
+                        isChecked ? 'bg-rose-50/50 border-rose-300 shadow-sm' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
                       {/* Header */}
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">
-                            #{meeting.votingArchive.length - idx} • {new Date(item.completedAt).toLocaleString()}
-                          </span>
-                          <p className="text-xs font-bold text-slate-800 mt-0.5 leading-snug">{item.title}</p>
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedVoteArchiveIds(prev => [...prev, item.id]);
+                              else setSelectedVoteArchiveIds(prev => prev.filter(x => x !== item.id));
+                            }}
+                            className="mt-1 h-4 w-4 text-blue-600 rounded border-slate-300 cursor-pointer flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">
+                              #{meeting.votingArchive.length - idx} • {new Date(item.completedAt).toLocaleString()}
+                            </span>
+                            <p className="text-xs font-bold text-slate-800 mt-0.5 leading-snug">{item.title}</p>
+                          </div>
                         </div>
-                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg flex-shrink-0 ${
-                          passed
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}>
-                          {passed ? '✅ БАТЛАГДСАН' : '❌ ТАТГАЛЗАГДСАН'}
-                        </span>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg ${
+                            passed
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}>
+                            {passed ? '✅ БАТЛАГДСАН' : '❌ ТАТГАЛЗАГДСАН'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSingleVoteArchive(item.id)}
+                            title="Энэ санал хураалтын архивыг устгах"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Stats */}

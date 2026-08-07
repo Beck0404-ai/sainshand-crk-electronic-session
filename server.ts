@@ -797,6 +797,26 @@ app.post('/api/admin/notifications/clear', async (req: Request, res: Response) =
   res.json({ success: true });
 });
 
+// Delete single or selected notifications (Admin Tool)
+app.post('/api/admin/notification/delete', async (req: Request, res: Response) => {
+  const { id, ids } = req.body;
+  const targetIds: string[] = ids ? ids : id ? [id] : [];
+  serverNotifications = serverNotifications.filter(n => !targetIds.includes(n.id));
+  await dbSave('notifications', serverNotifications);
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Delete single or selected voting archive items (Admin Tool)
+app.post('/api/admin/voting-archive/delete', async (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
+  const { id, ids } = req.body;
+  const targetIds: string[] = ids ? ids : id ? [id] : [];
+  serverMeeting.votingArchive = serverMeeting.votingArchive.filter(v => !targetIds.includes(v.id));
+  broadcastState();
+  res.json({ success: true });
+});
+
 // Reset entire system back to clean empty state (Admin Tool)
 app.post('/api/system/reset', async (req: Request, res: Response) => {
   serverMeeting = null;
