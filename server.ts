@@ -813,6 +813,7 @@ app.post('/api/admin/voting-archive/delete', async (req: Request, res: Response)
   const { id, ids } = req.body;
   const targetIds: string[] = ids ? ids : id ? [id] : [];
   serverMeeting.votingArchive = serverMeeting.votingArchive.filter(v => !targetIds.includes(v.id));
+  await dbSave('meeting', serverMeeting);
   broadcastState();
   res.json({ success: true });
 });

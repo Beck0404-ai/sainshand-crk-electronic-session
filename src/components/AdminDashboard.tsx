@@ -41,6 +41,7 @@ interface AdminDashboardProps {
   onSetMeetingStatus: (status: 'товлогдсон' | 'идэвхтэй' | 'дууссан') => Promise<void>;
   onViewProjector: () => void;
   onClearNotifications: () => Promise<void>;
+  onRefreshState?: () => Promise<void>;
 }
 
 export default function AdminDashboard({
@@ -70,7 +71,8 @@ export default function AdminDashboard({
   onSelectAgenda,
   onSetMeetingStatus,
   onViewProjector,
-  onClearNotifications
+  onClearNotifications,
+  onRefreshState
 }: AdminDashboardProps) {
   // Navigation Tabs for Sub-panels
   const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports'>('control');
@@ -89,44 +91,62 @@ export default function AdminDashboard({
 
   const handleDeleteSingleNotification = async (id: string) => {
     if (!confirm('Энэ мэдэгдлийг устгах уу?')) return;
-    await fetch('/api/admin/notification/delete', {
+    const res = await fetch('/api/admin/notification/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
-    setSelectedNotifIds(prev => prev.filter(x => x !== id));
+    if (res.ok) {
+      setSelectedNotifIds(prev => prev.filter(x => x !== id));
+      if (onRefreshState) await onRefreshState();
+    }
   };
 
   const handleDeleteSelectedNotifications = async () => {
     if (selectedNotifIds.length === 0) return;
     if (!confirm(`Сонгосон ${selectedNotifIds.length} мэдэгдлийг устгах уу?`)) return;
-    await fetch('/api/admin/notification/delete', {
+    const res = await fetch('/api/admin/notification/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids: selectedNotifIds })
     });
-    setSelectedNotifIds([]);
+    if (res.ok) {
+      setSelectedNotifIds([]);
+      if (onRefreshState) await onRefreshState();
+    }
   };
 
   const handleDeleteSingleVoteArchive = async (id: string) => {
     if (!confirm('Энэ санал хураалтын архивыг устгах уу?')) return;
-    await fetch('/api/admin/voting-archive/delete', {
+    const res = await fetch('/api/admin/voting-archive/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
-    setSelectedVoteArchiveIds(prev => prev.filter(x => x !== id));
+    if (res.ok) {
+      setSelectedVoteArchiveIds(prev => prev.filter(x => x !== id));
+      if (onRefreshState) await onRefreshState();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Устгахад алдаа гарлаа.');
+    }
   };
 
   const handleDeleteSelectedVoteArchives = async () => {
     if (selectedVoteArchiveIds.length === 0) return;
     if (!confirm(`Сонгосон ${selectedVoteArchiveIds.length} санал хураалтын архивыг устгах уу?`)) return;
-    await fetch('/api/admin/voting-archive/delete', {
+    const res = await fetch('/api/admin/voting-archive/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids: selectedVoteArchiveIds })
     });
-    setSelectedVoteArchiveIds([]);
+    if (res.ok) {
+      setSelectedVoteArchiveIds([]);
+      if (onRefreshState) await onRefreshState();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Устгахад алдаа гарлаа.');
+    }
   };
   
   // Create meeting inputs

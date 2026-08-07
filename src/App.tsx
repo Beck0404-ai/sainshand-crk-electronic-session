@@ -725,6 +725,7 @@ export default function App() {
             onSetMeetingStatus={setMeetingStatus}
             onViewProjector={() => handleRoleChange('projector', null)}
             onClearNotifications={handleClearNotifications}
+            onRefreshState={refreshState}
           />
         )}
 
