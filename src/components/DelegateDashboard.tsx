@@ -410,8 +410,8 @@ export default function DelegateDashboard({
                   <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                     {/* Card top: avatar + name */}
                     <div className="bg-slate-900 px-4 py-4 flex items-center gap-3">
-                      {delegate.avatarUrl ? (
-                        <img src={delegate.avatarUrl} alt={delegate.fullName} className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0" />
+                      {(profileAvatarUrl || delegate.avatarUrl) ? (
+                        <img src={profileAvatarUrl || delegate.avatarUrl} alt={delegate.fullName} className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0" />
                       ) : (
                         <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
                           {delegate.fullName.substring(0, 3)}
@@ -585,9 +585,9 @@ export default function DelegateDashboard({
           {/* DELEGATE EXECUTIVE PROFILE BANNER */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
             <div className="flex items-center gap-4 text-center sm:text-left min-w-0">
-              {delegate.avatarUrl ? (
+              {(profileAvatarUrl || delegate.avatarUrl) ? (
                 <img
-                  src={delegate.avatarUrl}
+                  src={profileAvatarUrl || delegate.avatarUrl}
                   alt={delegate.fullName}
                   className="h-14 w-14 rounded-2xl object-cover shadow-md flex-shrink-0 border-2 border-white"
                 />

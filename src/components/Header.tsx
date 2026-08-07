@@ -103,6 +103,9 @@ export default function Header({
           {/* User Signout or detail */}
           {currentRole !== 'projector' && (
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 pl-2.5 pr-1.5 py-1 rounded-lg">
+              {currentRole === 'delegate' && activeDelegate?.avatarUrl && (
+                <img src={activeDelegate.avatarUrl} alt={activeDelegate.fullName} className="h-7 w-7 rounded-lg object-cover border border-slate-200 shadow-sm" />
+              )}
               <div className="text-right">
                 <div className="text-[8px] text-blue-600 uppercase font-bold tracking-wider">
                   {currentRole === 'admin' ? 'Админ' : 'Төлөөлөгч'}
