@@ -818,15 +818,44 @@ app.post('/api/admin/voting-archive/delete', async (req: Request, res: Response)
   res.json({ success: true });
 });
 
-// Reset entire system back to clean empty state (Admin Tool)
+// Reset entire system back to clean fresh state with preseeded 29 delegates (Admin Tool)
 app.post('/api/system/reset', async (req: Request, res: Response) => {
   serverMeeting = null;
   seedDelegates.length = 0;
+  seedDelegates.push(...getInitial29Delegates());
   pendingDelegates.length = 0;
   serverNotifications = [];
   appVersion += 1;
   await dbClearAll();
+  await dbSave('delegates', seedDelegates);
   broadcastState(false);
+  res.json({ success: true });
+});
+
+// Clear all archives (voting archives, test notifications, speaker queue) while keeping current meeting intact
+app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
+  if (serverMeeting) {
+    serverMeeting.votingArchive = [];
+    serverMeeting.voting = {
+      active: false,
+      agendaItemId: '',
+      title: '',
+      votes: {}
+    };
+    serverMeeting.speakerQueue = [];
+    serverMeeting.currentSpeaker = null;
+    await dbSave('meeting', serverMeeting);
+  }
+  serverNotifications = [];
+  await dbSave('notifications', serverNotifications);
+
+  seedDelegates.forEach(d => {
+    d.attendedMeetingsCount = 0;
+    d.votesCastCount = 0;
+  });
+  await dbSave('delegates', seedDelegates);
+
+  broadcastState();
   res.json({ success: true });
 });
 

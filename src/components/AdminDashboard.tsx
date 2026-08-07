@@ -148,6 +148,19 @@ export default function AdminDashboard({
       alert(data.error || 'Устгахад алдаа гарлаа.');
     }
   };
+
+  const handleCleanAllArchives = async () => {
+    if (!confirm('Бүх санал хураалтын архив болон мэдэгдлүүдийг цэвэрлэж шинэ болоход итгэлтэй байна уу?')) return;
+    const res = await fetch('/api/admin/clean-archives', { method: 'POST' });
+    if (res.ok) {
+      setSelectedVoteArchiveIds([]);
+      setSelectedNotifIds([]);
+      if (onRefreshState) await onRefreshState();
+      alert('✓ Бүх санал хураалтын архив, мэдэгдлүүдийг бүрэн цэвэрлэж шинэчиллээ.');
+    } else {
+      alert('Цэвэрлэхэд алдаа гарлаа.');
+    }
+  };
   
   // Create meeting inputs
   const [newTitle, setNewTitle] = useState('');
@@ -1988,15 +2001,24 @@ export default function AdminDashboard({
                 <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <CheckCircle size={15} className="text-blue-600" /> Санал хураалтын архив ({meeting.votingArchive.length})
                 </h4>
-                {selectedVoteArchiveIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {selectedVoteArchiveIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelectedVoteArchives}
+                      className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Trash2 size={12} /> Сонгосныг устгах ({selectedVoteArchiveIds.length})
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={handleDeleteSelectedVoteArchives}
-                    className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    onClick={handleCleanAllArchives}
+                    className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
                   >
-                    <Trash2 size={12} /> Сонгосон санал хураалтыг устгах ({selectedVoteArchiveIds.length})
+                    <RotateCcw size={12} /> Бүх архивыг цэвэрлэх
                   </button>
-                )}
+                </div>
               </div>
 
               <div className="space-y-3">
