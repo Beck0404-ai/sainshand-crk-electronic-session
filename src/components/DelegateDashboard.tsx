@@ -8,7 +8,7 @@ import { Delegate, CRKMeeting, NotificationItem, AgendaMaterial } from '../types
 import {
   CheckCircle, Clock, Volume2, AlertTriangle, FileText,
   Download, Users, BookOpen, CheckSquare, History, Bell, Mail, Phone, ArrowRight,
-  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save, User
+  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save, User, Camera, Upload, Trash2, Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -21,7 +21,7 @@ interface DelegateDashboardProps {
   onJoinSpeakerQueue: () => Promise<void>;
   onLeaveSpeakerQueue: () => Promise<void>;
   onSubmitVote: (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
-  onUpdateProfile: (data: { phone: string; email: string; bio: string }) => Promise<void>;
+  onUpdateProfile: (data: { phone: string; email: string; bio: string; avatarUrl?: string }) => Promise<void>;
   onLogout: () => void;
 }
 
@@ -45,6 +45,24 @@ export default function DelegateDashboard({
   const [profilePhone, setProfilePhone] = useState(delegate.phone);
   const [profileEmail, setProfileEmail] = useState(delegate.email);
   const [profileBio, setProfileBio] = useState(delegate.bio || '');
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState(delegate.avatarUrl || '');
+
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Зургийн хэмжээ 5MB-аас бага байх шаардлагатай.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setProfileAvatarUrl(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Delegate Profile Modal States
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -392,9 +410,13 @@ export default function DelegateDashboard({
                   <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                     {/* Card top: avatar + name */}
                     <div className="bg-slate-900 px-4 py-4 flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
-                        {delegate.fullName.substring(0, 3)}
-                      </div>
+                      {delegate.avatarUrl ? (
+                        <img src={delegate.avatarUrl} alt={delegate.fullName} className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-sm flex-shrink-0">
+                          {delegate.fullName.substring(0, 3)}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <p className="text-[9px] text-slate-400 font-mono uppercase tracking-wider">Тойрог: {delegate.district.split(' ')[0]}</p>
                         <p className="font-bold text-white text-sm leading-tight mt-0.5 truncate">{delegate.fullName}</p>
@@ -563,9 +585,17 @@ export default function DelegateDashboard({
           {/* DELEGATE EXECUTIVE PROFILE BANNER */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
             <div className="flex items-center gap-4 text-center sm:text-left min-w-0">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
-                {delegate.fullName.substring(0, 2)}
-              </div>
+              {delegate.avatarUrl ? (
+                <img
+                  src={delegate.avatarUrl}
+                  alt={delegate.fullName}
+                  className="h-14 w-14 rounded-2xl object-cover shadow-md flex-shrink-0 border-2 border-white"
+                />
+              ) : (
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
+                  {delegate.fullName.substring(0, 2)}
+                </div>
+              )}
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
                   <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full border border-blue-150">
@@ -1069,9 +1099,17 @@ export default function DelegateDashboard({
                 
                 {/* Identity banner */}
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-2xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
-                    {delegate.fullName.substring(0, 2)}
-                  </div>
+                  {(profileAvatarUrl || delegate.avatarUrl) ? (
+                    <img
+                      src={profileAvatarUrl || delegate.avatarUrl}
+                      alt={delegate.fullName}
+                      className="h-16 w-16 rounded-2xl object-cover shadow-md flex-shrink-0 border-2 border-white"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-2xl flex items-center justify-center shadow-md flex-shrink-0 border-2 border-white">
+                      {delegate.fullName.substring(0, 2)}
+                    </div>
+                  )}
                   <div className="space-y-1 text-center sm:text-left flex-1 min-w-0">
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <span className="text-xs font-mono font-bold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200">
@@ -1103,7 +1141,7 @@ export default function DelegateDashboard({
                       profileTab === 'info' ? 'border-blue-600 text-blue-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    📋 Үндсэн мэдээлэл
+                    📋 Үндсэн мэдээлэл & Зураг
                   </button>
                   <button
                     type="button"
@@ -1125,14 +1163,19 @@ export default function DelegateDashboard({
                   </button>
                 </div>
 
-                {/* TAB 1: INFO & EDIT */}
+                {/* TAB 1: INFO & EDIT PHOTO */}
                 {profileTab === 'info' && (
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     setIsSavingProfile(true);
                     try {
-                      await onUpdateProfile({ phone: profilePhone, email: profileEmail, bio: profileBio });
-                      showProfileToastMsg('✓ Мэдээлэл амжилттай хадгалагдлаа!');
+                      await onUpdateProfile({
+                        phone: profilePhone,
+                        email: profileEmail,
+                        bio: profileBio,
+                        avatarUrl: profileAvatarUrl
+                      });
+                      showProfileToastMsg('✓ Мэдээлэл болон зураг амжилттай хадгалагдлаа!');
                     } catch {
                       alert('Хадгалахад алдаа гарлаа.');
                     } finally {
@@ -1140,6 +1183,60 @@ export default function DelegateDashboard({
                     }
                   }} className="space-y-4 text-xs">
                     
+                    {/* PHOTO UPLOAD SECTION */}
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
+                      <label className="block font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                        <Camera size={14} className="text-blue-600" /> Төлөөлөгчийн профайл зураг солих
+                      </label>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
+                        {/* Avatar preview */}
+                        <div className="relative group flex-shrink-0">
+                          {profileAvatarUrl ? (
+                            <img
+                              src={profileAvatarUrl}
+                              alt={delegate.fullName}
+                              className="h-16 w-16 rounded-2xl object-cover border-2 border-white shadow-md"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-2xl flex items-center justify-center shadow-md border-2 border-white">
+                              {delegate.fullName.substring(0, 2)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* File upload actions */}
+                        <div className="flex-1 space-y-2 text-center sm:text-left">
+                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                            <label className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                              <Upload size={13} />
+                              <span>Зураг оруулах (.jpg, .png)</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarFileUpload}
+                                className="hidden"
+                              />
+                            </label>
+
+                            {profileAvatarUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setProfileAvatarUrl('')}
+                                className="bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer flex items-center gap-1"
+                              >
+                                <Trash2 size={13} />
+                                <span>Зураг арилгах</span>
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            ℹ️ Та утас эсвэл компьютерээсээ өөрийн зургийг сонгож шууд хадгалах боломжтой.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
@@ -1186,7 +1283,7 @@ export default function DelegateDashboard({
                       className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-2"
                     >
                       <Save size={14} />
-                      {isSavingProfile ? 'Хадгалж байна...' : 'Мэдээллийг Хадгалах'}
+                      {isSavingProfile ? 'Хадгалж байна...' : 'Мэдээлэл болон Зургаа Хадгалах'}
                     </button>
                   </form>
                 )}

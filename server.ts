@@ -509,12 +509,13 @@ app.post('/api/vote/submit', (req: Request, res: Response) => {
 
 // Delegate updates profile (Delegate action)
 app.post('/api/profile/update', (req: Request, res: Response) => {
-  const { delegateId, phone, email, bio } = req.body;
+  const { delegateId, phone, email, bio, avatarUrl } = req.body;
   const d = seedDelegates.find(x => x.id === delegateId);
   if (d) {
     d.phone = phone || d.phone;
     d.email = email || d.email;
-    d.bio = bio || d.bio;
+    if (bio !== undefined) d.bio = bio;
+    if (avatarUrl !== undefined) d.avatarUrl = avatarUrl;
     broadcastState();
     res.json({ success: true, delegate: d });
   } else {

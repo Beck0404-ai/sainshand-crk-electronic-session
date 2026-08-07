@@ -251,7 +251,7 @@ export default function App() {
     await refreshState();
   };
 
-  const updateProfile = async (data: { phone: string; email: string; bio: string }) => {
+  const updateProfile = async (data: { phone: string; email: string; bio: string; avatarUrl?: string }) => {
     if (!currentDelegateId) return;
     await fetch('/api/profile/update', {
       method: 'POST',
