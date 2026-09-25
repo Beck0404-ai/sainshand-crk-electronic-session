@@ -15,6 +15,7 @@ import Header from './components/Header.js';
 import DelegateDashboard from './components/DelegateDashboard.js';
 import AdminDashboard from './components/AdminDashboard.js';
 import ProjectorView from './components/ProjectorView.js';
+import GlobalSearchModal from './components/GlobalSearchModal.js';
 import { Shield, Users, Monitor, ChevronRight, Landmark, UserPlus } from 'lucide-react';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState<'admin' | 'projector' | 'delegate' | null>(null);
   const [currentDelegateId, setCurrentDelegateId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Login Form States
   const [loginRoleTab, setLoginRoleTab] = useState<'delegate' | 'admin' | 'register'>('delegate');
@@ -109,12 +111,30 @@ export default function App() {
     );
   }
 
-  const { delegates, meeting, notifications, pendingDelegates } = appState;
+  const { delegates, meeting, notifications, pendingDelegates, meetingHistory = [] } = appState;
 
   // Global action dispatcher helpers
   const handleRoleChange = (role: 'admin' | 'projector' | 'delegate', delegateId: string | null) => {
     setCurrentRole(role);
     setCurrentDelegateId(delegateId);
+  };
+
+  const deleteHistoryMeeting = async (meetingId: string) => {
+    await fetch('/api/admin/meeting-history/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meetingId })
+    });
+    await refreshState();
+  };
+
+  const deleteComment = async (commentId: string) => {
+    await fetch('/api/admin/agenda/comment/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentId })
+    });
+    await refreshState();
   };
 
   const handleLogout = () => {
@@ -676,6 +696,7 @@ export default function App() {
           delegates={delegates}
           meeting={meeting}
           onLogout={handleLogout}
+          onOpenSearch={() => setIsSearchOpen(true)}
         />
       )}
 
@@ -693,6 +714,14 @@ export default function App() {
             onSubmitVote={submitVote}
             onUpdateProfile={updateProfile}
             onLogout={handleLogout}
+            onSubmitComment={async (agendaItemId, text) => {
+              await fetch('/api/delegate/agenda/comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ delegateId: activeDelegate.id, agendaItemId, text })
+              });
+              await refreshState();
+            }}
           />
         )}
 
@@ -703,6 +732,7 @@ export default function App() {
             notifications={notifications}
             allDelegates={delegates}
             pendingDelegates={pendingDelegates}
+            meetingHistory={meetingHistory}
             onToggleAttendance={toggleAttendance}
             onStartVoting={startVoting}
             onStopVoting={stopVoting}
@@ -726,6 +756,8 @@ export default function App() {
             onViewProjector={() => handleRoleChange('projector', null)}
             onClearNotifications={handleClearNotifications}
             onRefreshState={refreshState}
+            onDeleteHistoryMeeting={deleteHistoryMeeting}
+            onDeleteComment={deleteComment}
           />
         )}
 
@@ -737,6 +769,15 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Global Search Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        meeting={meeting}
+        allDelegates={delegates}
+        meetingHistory={meetingHistory}
+      />
 
       {/* Small subtle page footer */}
       {currentRole !== 'projector' && (

@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Delegate, CRKMeeting, NotificationItem, AgendaMaterial } from '../types.js';
 import {
   CheckCircle, Clock, Volume2, AlertTriangle, FileText,
   Download, Users, BookOpen, CheckSquare, History, Bell, Mail, Phone, ArrowRight,
-  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save, User, Camera, Upload, Trash2, Image as ImageIcon
+  Menu, X, Send, Search, Lock, Shield, Globe, FileEdit, Save, User, Camera, Upload, Trash2, Image as ImageIcon, MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -23,6 +23,7 @@ interface DelegateDashboardProps {
   onSubmitVote: (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
   onUpdateProfile: (data: { phone: string; email: string; bio: string; avatarUrl?: string }) => Promise<void>;
   onLogout: () => void;
+  onSubmitComment?: (agendaItemId: string, text: string) => Promise<void>;
 }
 
 export default function DelegateDashboard({
@@ -35,12 +36,60 @@ export default function DelegateDashboard({
   onLeaveSpeakerQueue,
   onSubmitVote,
   onUpdateProfile,
-  onLogout
+  onLogout,
+  onSubmitComment
 }: DelegateDashboardProps) {
   const [selectedAgendaId, setSelectedAgendaId] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [submittingComment, setSubmittingComment] = useState<string | null>(null);
+
+  // Meeting Elapsed Duration Timer
+  const [meetingDurationStr, setMeetingDurationStr] = useState<string>('00:00:00');
+
+  useEffect(() => {
+    if (!meeting?.startedAt || meeting.status !== 'идэвхтэй') {
+      setMeetingDurationStr('00:00:00');
+      return;
+    }
+    const updateTimer = () => {
+      const elapsedSec = Math.max(0, Math.floor((Date.now() - (meeting.startedAt || Date.now())) / 1000));
+      const hrs = Math.floor(elapsedSec / 3600);
+      const mins = Math.floor((elapsedSec % 3600) / 60);
+      const secs = elapsedSec % 60;
+      setMeetingDurationStr(
+        `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      );
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [meeting?.startedAt, meeting?.status]);
+
+  const handleSendComment = async (agendaItemId: string) => {
+    const text = commentInputs[agendaItemId]?.trim();
+    if (!text) return;
+    setSubmittingComment(agendaItemId);
+    try {
+      if (onSubmitComment) {
+        await onSubmitComment(agendaItemId, text);
+      } else {
+        await fetch('/api/delegate/agenda/comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delegateId: delegate.id, agendaItemId, text })
+        });
+      }
+      setCommentInputs(prev => ({ ...prev, [agendaItemId]: '' }));
+    } catch (e) {
+      alert('Тайлбар бичихэд алдаа гарлаа.');
+    } finally {
+      setSubmittingComment(null);
+    }
+  };
 
   const [profilePhone, setProfilePhone] = useState(delegate.phone);
   const [profileEmail, setProfileEmail] = useState(delegate.email);
@@ -623,6 +672,12 @@ export default function DelegateDashboard({
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center">
+              {meeting?.status === 'идэвхтэй' && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs">
+                  <Clock size={13} className="animate-pulse text-blue-600" />
+                  <span>{meetingDurationStr}</span>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => setShowProfileModal(true)}
@@ -913,9 +968,65 @@ export default function DelegateDashboard({
                                      ))}
                                   </div>
                                 )}
-                              </div>
-                            </motion.div>
-                          )}
+                                {/* AGENDA COMMENTS SECTION */}
+                                  <div className="p-4 bg-slate-100/70 border-t border-slate-200/80 space-y-3">
+                                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                                      <span className="flex items-center gap-1.5">
+                                        <MessageSquare size={14} className="text-blue-600" /> Асуудалтай холбоотой санал / тайлбарууд ({(meeting?.agendaComments || []).filter(c => c.agendaItemId === item.id).length})
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono">Нийтэд харагдана</span>
+                                    </div>
+
+                                    {/* Existing comments */}
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                      {(meeting?.agendaComments || []).filter(c => c.agendaItemId === item.id).length === 0 ? (
+                                        <p className="text-[11px] text-slate-400 italic">Санал тайлбар бичигдээгүй байна.</p>
+                                      ) : (
+                                        (meeting?.agendaComments || []).filter(c => c.agendaItemId === item.id).map(c => (
+                                          <div key={c.id} className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs flex items-start gap-2 shadow-2xs">
+                                            {c.avatarUrl ? (
+                                              <img src={c.avatarUrl} alt={c.delegateName} className="h-6 w-6 rounded-full object-cover border" />
+                                            ) : (
+                                              <div className="h-6 w-6 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center flex-shrink-0">
+                                                {c.delegateName.substring(0, 2)}
+                                              </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center justify-between text-[10px]">
+                                                <span className="font-bold text-slate-800">{c.delegateName}</span>
+                                                <span className="text-[9px] text-slate-400 font-mono">{new Date(c.createdAt).toLocaleTimeString()}</span>
+                                              </div>
+                                              <p className="text-slate-600 text-[11px] mt-0.5">{c.text}</p>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+
+                                    {/* Input comment */}
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <input
+                                        type="text"
+                                        value={commentInputs[item.id] || ''}
+                                        onChange={(e) => setCommentInputs({ ...commentInputs, [item.id]: e.target.value })}
+                                        placeholder="Энэ асуудалд тайлбар/санал бичих..."
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSendComment(item.id); }}
+                                        className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSendComment(item.id)}
+                                        disabled={submittingComment === item.id || !commentInputs[item.id]?.trim()}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition disabled:opacity-50 cursor-pointer flex items-center gap-1 flex-shrink-0 shadow-xs"
+                                      >
+                                        <Send size={12} />
+                                        Илгээх
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
                         </AnimatePresence>
 
                       </div>

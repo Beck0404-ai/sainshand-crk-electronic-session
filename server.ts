@@ -8,7 +8,7 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, ActiveVoting, SpeakerRequest, VotingArchiveItem, PendingDelegate } from './src/types.js';
+import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, ActiveVoting, SpeakerRequest, VotingArchiveItem, PendingDelegate, AgendaComment } from './src/types.js';
 import { dbLoad, dbSave, dbClearAll, getSupabaseClient } from './src/db.js';
 
 const isCjs = typeof __filename !== 'undefined' && typeof __dirname !== 'undefined';
@@ -57,8 +57,8 @@ const getInitial29Delegates = (): any[] => [
 const seedDelegates: any[] = getInitial29Delegates();
 
 let serverMeeting: CRKMeeting | null = null;
-
 let serverNotifications: NotificationItem[] = [];
+let serverMeetingHistory: CRKMeeting[] = [];
 
 interface PendingDelegateInternal extends PendingDelegate {
   password: string;
@@ -70,11 +70,12 @@ let appVersion = 1;
 
 async function loadStateFromDB() {
   try {
-    const [dels, mtg, pend, notifs] = await Promise.all([
+    const [dels, mtg, pend, notifs, hist] = await Promise.all([
       dbLoad<any[]>('delegates'),
       dbLoad<CRKMeeting | null>('meeting'),
       dbLoad<any[]>('pending_delegates'),
       dbLoad<NotificationItem[]>('notifications'),
+      dbLoad<CRKMeeting[]>('meeting_history'),
     ]);
     if (dels?.length) { 
       seedDelegates.length = 0; 
@@ -86,7 +87,8 @@ async function loadStateFromDB() {
     if (mtg !== null) serverMeeting = mtg;
     if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
     if (notifs !== null) serverNotifications = notifs ?? [];
-    console.log(`DB: ${seedDelegates.length} delegates, meeting: ${serverMeeting?.id ?? 'none'}`);
+    if (hist?.length) serverMeetingHistory = hist;
+    console.log(`DB: ${seedDelegates.length} delegates, meeting: ${serverMeeting?.id ?? 'none'}, history: ${serverMeetingHistory.length}`);
   } catch (e) {
     console.error('DB load error:', e);
   }
@@ -98,6 +100,7 @@ async function saveStateToDB() {
     dbSave('meeting', serverMeeting),
     dbSave('pending_delegates', pendingDelegates),
     dbSave('notifications', serverNotifications),
+    dbSave('meeting_history', serverMeetingHistory),
   ]);
 }
 
@@ -157,7 +160,8 @@ function getFullState(): AppState {
       return rest;
     }),
     notifications: serverNotifications,
-    pendingDelegates: pendingDelegates.map(({ password, ...rest }) => rest)
+    pendingDelegates: pendingDelegates.map(({ password, ...rest }) => rest),
+    meetingHistory: serverMeetingHistory
   };
 }
 
@@ -251,6 +255,7 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
     serverMeeting.currentSpeaker = null;
     serverMeeting.speakerQueue = [];
     serverMeeting.voting.active = false;
+    serverMeetingHistory.unshift({ ...serverMeeting });
   }
 
   serverMeeting = {
@@ -259,6 +264,7 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
     date: date || new Date().toISOString().split('T')[0],
     time: time || '09:00',
     status: 'идэвхтэй',
+    startedAt: Date.now(),
     agenda: agenda || [
       {
         id: 'agenda-1',
@@ -278,7 +284,8 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
       title: 'Санал хураалт',
       votes: {}
     },
-    votingArchive: []
+    votingArchive: [],
+    agendaComments: []
   };
 
   // Send notification to all
@@ -867,6 +874,55 @@ app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
   });
   await dbSave('delegates', seedDelegates);
 
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Submit comment on an agenda item (Delegate Tool)
+app.post('/api/delegate/agenda/comment', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
+  const { delegateId, agendaItemId, text } = req.body;
+  if (!delegateId || !agendaItemId || !text || !text.trim()) {
+    return res.status(400).json({ error: 'Мэдээллийг бүрэн бөглөнө үү.' });
+  }
+  const delegate = seedDelegates.find(d => d.id === delegateId);
+  if (!delegate) return res.status(404).json({ error: 'Төлөөлөгч олдсонгүй.' });
+
+  if (!serverMeeting.agendaComments) {
+    serverMeeting.agendaComments = [];
+  }
+
+  const newComment: AgendaComment = {
+    id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    delegateId,
+    delegateName: delegate.fullName,
+    avatarUrl: delegate.avatarUrl,
+    agendaItemId,
+    text: text.trim(),
+    createdAt: Date.now()
+  };
+
+  serverMeeting.agendaComments.push(newComment);
+  broadcastState();
+  res.json({ success: true, comment: newComment });
+});
+
+// Delete comment from an agenda item (Admin Tool)
+app.post('/api/admin/agenda/comment/delete', (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
+  const { commentId } = req.body;
+  if (serverMeeting.agendaComments) {
+    serverMeeting.agendaComments = serverMeeting.agendaComments.filter(c => c.id !== commentId);
+  }
+  broadcastState();
+  res.json({ success: true });
+});
+
+// Delete meeting from history (Admin Tool)
+app.post('/api/admin/meeting-history/delete', async (req: Request, res: Response) => {
+  const { meetingId } = req.body;
+  serverMeetingHistory = serverMeetingHistory.filter(m => m.id !== meetingId);
+  await dbSave('meeting_history', serverMeetingHistory);
   broadcastState();
   res.json({ success: true });
 });

@@ -9,9 +9,11 @@ import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
   Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw,
-  Search, Filter, Printer, Clock, Bell
+  Search, Filter, Printer, Clock, Bell, MessageSquare, BarChart3, History
 } from 'lucide-react';
 import PrintReportModal from './PrintReportModal';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import MeetingHistoryPanel from './MeetingHistoryPanel';
 
 interface AdminDashboardProps {
   meeting: CRKMeeting | null;
@@ -19,6 +21,7 @@ interface AdminDashboardProps {
   notifications: NotificationItem[];
   allDelegates: Delegate[];
   pendingDelegates: PendingDelegate[];
+  meetingHistory?: CRKMeeting[];
   onToggleAttendance: (open: boolean) => Promise<void>;
   onStartVoting: (agendaItemId: string, title: string) => Promise<void>;
   onStopVoting: () => Promise<void>;
@@ -42,6 +45,8 @@ interface AdminDashboardProps {
   onViewProjector: () => void;
   onClearNotifications: () => Promise<void>;
   onRefreshState?: () => Promise<void>;
+  onDeleteHistoryMeeting?: (meetingId: string) => Promise<void>;
+  onDeleteComment?: (commentId: string) => Promise<void>;
 }
 
 export default function AdminDashboard({
@@ -50,6 +55,7 @@ export default function AdminDashboard({
   notifications,
   allDelegates,
   pendingDelegates,
+  meetingHistory = [],
   onToggleAttendance,
   onStartVoting,
   onStopVoting,
@@ -72,10 +78,34 @@ export default function AdminDashboard({
   onSetMeetingStatus,
   onViewProjector,
   onClearNotifications,
-  onRefreshState
+  onRefreshState,
+  onDeleteHistoryMeeting,
+  onDeleteComment
 }: AdminDashboardProps) {
   // Navigation Tabs for Sub-panels
-  const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports'>('control');
+  const [adminTab, setAdminTab] = useState<'control' | 'delegates' | 'meeting' | 'reports' | 'analytics' | 'history'>('control');
+
+  // Real-time Meeting Elapsed Duration Timer
+  const [meetingDurationStr, setMeetingDurationStr] = useState<string>('00:00:00');
+
+  useEffect(() => {
+    if (!meeting?.startedAt || meeting.status !== 'идэвхтэй') {
+      setMeetingDurationStr('00:00:00');
+      return;
+    }
+    const updateTimer = () => {
+      const elapsedSec = Math.max(0, Math.floor((Date.now() - (meeting.startedAt || Date.now())) / 1000));
+      const hrs = Math.floor(elapsedSec / 3600);
+      const mins = Math.floor((elapsedSec % 3600) / 60);
+      const secs = elapsedSec % 60;
+      setMeetingDurationStr(
+        `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      );
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [meeting?.startedAt, meeting?.status]);
   
   // Search & Filter state for delegates tab
   const [delegateSearch, setDelegateSearch] = useState('');
@@ -809,6 +839,24 @@ export default function AdminDashboard({
           >
             Тайлан, Архив
           </button>
+          <button
+            onClick={() => setAdminTab('analytics')}
+            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              adminTab === 'analytics' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'
+            }`}
+          >
+            <BarChart3 size={13} />
+            Аналитик
+          </button>
+          <button
+            onClick={() => setAdminTab('history')}
+            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 ${
+              adminTab === 'history' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'
+            }`}
+          >
+            <History size={13} />
+            Хуралдааны түүх ({meetingHistory.length})
+          </button>
         </div>
         </div>
       </div>
@@ -838,8 +886,11 @@ export default function AdminDashboard({
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">ХУРАЛДААНЫ ТӨЛӨВ: АЛБАН ЁСООР ДУУССАН</span>
                 <h3 className="text-2xl font-black text-slate-900">{meeting.title}</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Огноо: {meeting.date} | Эхэлсэн цаг: {meeting.time} | Ирцийн хувь: <strong className="text-slate-800 font-bold">{attendancePercentage}% ({presentDelegatesCount}/{allDelegates.length})</strong>
+                <p className="text-xs text-slate-500 font-medium flex flex-wrap items-center gap-3 mt-1">
+                  <span>Огноо: {meeting.date} | Эхэлсэн цаг: {meeting.time}</span>
+                  <span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-mono font-bold border border-blue-200 flex items-center gap-1.5 text-[11px]">
+                    <Clock size={12} className="animate-pulse text-blue-600" /> Үргэлжилсэн цаг: {meetingDurationStr}
+                  </span>
                 </p>
               </div>
 
@@ -2150,6 +2201,24 @@ export default function AdminDashboard({
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB 5: ANALYTICS DASHBOARD */}
+      {adminTab === 'analytics' && (
+        <AnalyticsDashboard
+          meeting={meeting}
+          allDelegates={allDelegates}
+          meetingHistory={meetingHistory}
+        />
+      )}
+
+      {/* TAB 6: MEETING HISTORY ARCHIVE PANEL */}
+      {adminTab === 'history' && (
+        <MeetingHistoryPanel
+          meetingHistory={meetingHistory}
+          allDelegates={allDelegates}
+          onDeleteHistoryMeeting={onDeleteHistoryMeeting}
+        />
       )}
 
       {showPrintModal && meeting && (

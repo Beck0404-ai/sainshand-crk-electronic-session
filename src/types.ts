@@ -108,6 +108,16 @@ export interface PendingDelegate {
   status: 'хүлээгдэж буй' | 'зөвшөөрсөн' | 'татгалзсан';
 }
 
+export interface AgendaComment {
+  id: string;
+  delegateId: string;
+  delegateName: string;
+  avatarUrl?: string;
+  agendaItemId: string;
+  text: string;
+  createdAt: number;
+}
+
 export interface CRKMeeting {
   id: string;
   title: string;
@@ -122,6 +132,8 @@ export interface CRKMeeting {
   currentSpeaker: ActiveSpeaker | null;
   voting: ActiveVoting;
   votingArchive: VotingArchiveItem[];
+  startedAt?: number;
+  agendaComments?: AgendaComment[];
 }
 
 export interface AppState {
@@ -130,4 +142,5 @@ export interface AppState {
   delegates: Delegate[];
   notifications: NotificationItem[];
   pendingDelegates: PendingDelegate[];
+  meetingHistory?: CRKMeeting[];
 }

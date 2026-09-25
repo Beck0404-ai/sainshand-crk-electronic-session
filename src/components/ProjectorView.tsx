@@ -18,6 +18,26 @@ interface ProjectorViewProps {
 export default function ProjectorView({ meeting, delegates, onBackToAdmin }: ProjectorViewProps) {
   // Theme state: High-Contrast Dark vs Executive Light
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [meetingDurationStr, setMeetingDurationStr] = useState<string>('00:00:00');
+
+  useEffect(() => {
+    if (!meeting?.startedAt || meeting.status !== 'идэвхтэй') {
+      setMeetingDurationStr('00:00:00');
+      return;
+    }
+    const updateTimer = () => {
+      const elapsedSec = Math.max(0, Math.floor((Date.now() - (meeting.startedAt || Date.now())) / 1000));
+      const hrs = Math.floor(elapsedSec / 3600);
+      const mins = Math.floor((elapsedSec % 3600) / 60);
+      const secs = elapsedSec % 60;
+      setMeetingDurationStr(
+        `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      );
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [meeting?.startedAt, meeting?.status]);
 
   // Audio chime effect triggers
   const prevSpeakerTimeRef = useRef<number | undefined>(undefined);
@@ -81,7 +101,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
     return `${mins}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Helper to render horizontal moving/rolling names block for each voting selection
+  // Helper to render vertical moving/rolling names block for each voting selection
   const renderMarqueeLine = (list: Delegate[], badgeColorClass: string, bgClass: string, choiceName: string) => {
     if (list.length === 0) {
       return (
@@ -95,20 +115,23 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
     const repeatedList = [...list, ...list, ...list, ...list, ...list, ...list];
 
     return (
-      <div className="relative overflow-hidden w-full bg-blue-950/70 py-2 px-2 rounded-xl border border-blue-900/40 mt-1.5 shadow-inner">
-        {/* Soft fading edges for professional visual ticker */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
+      <div className="relative overflow-hidden h-28 w-full bg-blue-950/70 py-2 px-2 rounded-xl border border-blue-900/40 mt-1.5 shadow-inner">
+        {/* Soft fading top and bottom edges */}
+        <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
         
-        <div className="animate-marquee-slow flex items-center gap-3">
+        <div className="animate-marquee-vertical space-y-1.5">
           {repeatedList.map((v, idx) => (
-            <span 
+            <div 
               key={`${v.id}-${idx}`} 
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full font-bold shadow-sm whitespace-nowrap transition-colors ${badgeColorClass} ${bgClass}`}
+              className={`flex items-center justify-between px-3 py-1.5 text-xs rounded-xl font-bold shadow-sm transition-colors ${badgeColorClass} ${bgClass}`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
-              <span>{v.fullName}</span>
-            </span>
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                <span>{v.fullName}</span>
+              </div>
+              <span className="text-[9px] opacity-75 font-mono">{v.district}</span>
+            </div>
           ))}
         </div>
       </div>
@@ -125,12 +148,21 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
           0% { transform: translateX(0%); }
           100% { transform: translateX(-33.333%); }
         }
+        @keyframes marqueeVertical {
+          0% { transform: translateY(0%); }
+          100% { transform: translateY(-50%); }
+        }
         .animate-marquee-slow {
           display: flex;
           width: max-content;
           animation: marquee 24s linear infinite;
         }
-        .animate-marquee-slow:hover {
+        .animate-marquee-vertical {
+          display: flex;
+          flex-direction: column;
+          animation: marqueeVertical 20s linear infinite;
+        }
+        .animate-marquee-vertical:hover {
           animation-play-state: paused;
         }
       `}} />
@@ -152,6 +184,13 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
         </div>
 
         <div className="flex items-center gap-3">
+          {meeting?.status === 'идэвхтэй' && (
+            <div className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 font-mono font-bold text-xs shadow-lg ${isDarkMode ? 'bg-[#0b162c] border border-blue-800/80 text-blue-300' : 'bg-white border border-slate-300 text-blue-700'}`}>
+              <span className="h-2 w-2 rounded-full bg-blue-500 animate-ping"></span>
+              <span>⏱️ {meetingDurationStr}</span>
+            </div>
+          )}
+
           {meeting && (
             <div className={`px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg ${isDarkMode ? 'bg-[#0b162c] border border-blue-800/80 shadow-black/30' : 'bg-white border border-slate-300 shadow-slate-300/50'}`}>
               <span className="relative flex h-2.5 w-2.5">
@@ -522,82 +561,107 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
 
         </div>
 
-        {/* RIGHT COLUMN: CHAMBER ATTENDANCE MAP (SPAN 3) */}
+        {/* RIGHT COLUMN: CHAMBER ATTENDANCE MAP & VERTICAL DELEGATES TICKER (SPAN 3) */}
         <div className="xl:col-span-3 flex flex-col justify-between">
           
-          <div className={`rounded-3xl border p-6 flex flex-col justify-between flex-grow relative overflow-hidden transition-colors duration-300 ${
+          <div className={`rounded-3xl border p-5 flex flex-col justify-between flex-grow relative overflow-hidden transition-colors duration-300 ${
             isDarkMode 
               ? 'bg-[#0b162c] border-blue-900/60 shadow-2xl text-slate-100' 
               : 'bg-white border-slate-300 text-slate-900 shadow-xl'
           }`}>
             
-            <div className="space-y-3">
-              <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2 mb-2">
-                <Users size={13} /> ТАНХИМЫН ИРЦ бүртгэх төлөв
+            <div className="space-y-3 flex flex-col h-full">
+              <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center justify-between border-b border-blue-900/40 pb-2">
+                <span className="flex items-center gap-1.5"><Users size={13} /> ТАНХИМЫН ИРЦ БҮРТГЭХ ТӨЛӨВ</span>
+                <span className="text-emerald-400 font-bold text-[8px] flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  ГҮЙЖ БАЙНА
+                </span>
               </h3>
 
-              <div className="bg-blue-950/40 p-2.5 rounded-xl border border-blue-900/50 text-center">
+              <div className="bg-blue-950/40 p-2.5 rounded-xl border border-blue-900/50 text-center flex-shrink-0">
                 <div className="text-xl font-mono font-bold text-white">{presentCount} / {totalCount}</div>
                 <div className="text-[9px] text-blue-400 font-mono uppercase tracking-widest mt-0.5 font-bold">БҮРТГЭГДСЭН ИРЭЛТ ({attendancePercentage}%)</div>
               </div>
 
-              {/* CHAMBER SEATING MAP SYMBOLS */}
-              <div className="pt-2">
-                <span className="text-[9px] text-blue-400 uppercase tracking-widest block mb-2 text-center font-mono font-bold">Танхимын суудлын зураглал</span>
-                
-                {/* 29 grid layout blocks */}
-                <div className="grid grid-cols-5 gap-1.5">
-                  {delegates.map((d, index) => {
-                    const isPresent = meeting ? !!meeting.attendance[d.id] : false;
-                    const didVote = isVotingActive ? !!votes[d.id] : false;
-                    let voteColor = 'bg-blue-800/40 text-blue-400';
-                    if (votes[d.id]?.choice === 'Зөвшөөрсөн') voteColor = 'bg-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]';
-                    else if (votes[d.id]?.choice === 'Татгалзсан') voteColor = 'bg-rose-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-                    else if (votes[d.id]?.choice === 'Түтгэлзсэн') voteColor = 'bg-amber-500 text-white shadow-[0_0_8px_rgba(245,158,11,0.5)]';
+              {/* VERTICAL SCROLLING TICKER OF ALL DELEGATES NAMES (Доороос дээш гүйдэг төлөөлөгчдийн нэрсийн жагсаалт) */}
+              <div className="pt-1 flex-1 flex flex-col min-h-[360px]">
+                <div className="flex items-center justify-between text-[9px] text-blue-400 uppercase tracking-widest mb-1.5 font-mono font-bold">
+                  <span>📜 ТӨЛӨӨЛӨГЧДИЙН НЭРС (ДОРООС ДЭЭШ)</span>
+                  <span>({delegates.length})</span>
+                </div>
 
-                    return (
-                      <div 
-                        key={d.id}
-                        className={`h-6 rounded relative flex items-center justify-center font-mono font-bold text-[9px] transition-all duration-300 tool-tip-parent shadow-sm ${
-                          isPresent 
-                            ? (isVotingActive && didVote ? `${voteColor} scale-105 ring-1 ring-blue-300` : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40')
-                            : 'bg-blue-950/40 text-blue-900/60 border border-blue-900/20'
-                        }`}
-                        title={`${d.fullName} (${isPresent ? 'Ирсэн' : 'Бүртгүүлээгүй'})`}
-                      >
-                        {String(index + 1).padStart(2, '0')}
-                      </div>
-                    );
-                  })}
+                <div className="relative flex-1 min-h-[340px] max-h-[460px] overflow-hidden rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner">
+                  {/* Soft top and bottom gradient fades */}
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0b162c] to-transparent z-10 pointer-events-none" />
+
+                  <div className="animate-marquee-vertical space-y-2">
+                    {[...delegates, ...delegates, ...delegates].map((d, idx) => {
+                      const isPresent = meeting ? !!meeting.attendance[d.id] : false;
+                      const didVote = isVotingActive ? !!votes[d.id] : false;
+                      const seatNo = String((idx % delegates.length) + 1).padStart(2, '0');
+
+                      let voteBadgeText = null;
+                      if (isVotingActive && didVote) {
+                        const choice = votes[d.id]?.choice;
+                        if (choice === 'Зөвшөөрсөн' || choice === 'Батлах') voteBadgeText = '👍 Зөвшөөрсөн';
+                        else if (choice === 'Татгалзсан' || choice === 'Татгалзах') voteBadgeText = '👎 Татгалзсан';
+                        else if (choice === 'Түтгэлзсэн' || choice === 'Санал гаргах') voteBadgeText = '✋ Түтгэлзсэн';
+                      }
+
+                      return (
+                        <div
+                          key={`${d.id}-${idx}`}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between border transition-all duration-300 ${
+                            isPresent
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm'
+                              : 'bg-blue-950/40 border-blue-900/30 text-slate-400 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={`h-5 w-5 rounded-md font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0 ${
+                              isPresent ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-blue-950 text-slate-500 border border-blue-900/40'
+                            }`}>
+                              {seatNo}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="font-bold truncate text-xs leading-snug">{d.fullName}</p>
+                              <p className="text-[9px] font-mono opacity-70 truncate">{d.party} • {d.district}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                              isPresent
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : 'bg-blue-950 text-slate-400 border-blue-900/40'
+                            }`}>
+                              {isPresent ? 'Ирсэн' : 'Ирээгүй'}
+                            </span>
+                            {voteBadgeText && (
+                              <span className="text-[8px] font-mono text-amber-300 font-bold">{voteBadgeText}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
               {/* SEATING MAP LEGEND */}
-              <div className="pt-4 border-t border-blue-900/40 space-y-1.5 text-[9px] text-blue-300/70 font-mono">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-sm"></div>
-                  <span>Ирц бүртгүүлсэн (Ирсэн)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 bg-blue-950/40 border border-blue-900/20 rounded-sm"></div>
-                  <span>Ороогүй байгаа (Ирээгүй)</span>
-                </div>
-                {isVotingActive && (
-                  <div className="space-y-1 pt-1 border-t border-dashed border-blue-900/40">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2.5 w-2.5 bg-emerald-500 rounded-sm"></div>
-                      <span>Зөвшөөрсөн (Сонголт)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2.5 w-2.5 bg-rose-500 rounded-sm"></div>
-                      <span>Татгалзсан (Сонголт)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2.5 w-2.5 bg-amber-500 rounded-sm"></div>
-                      <span>Түтгэлзсэн (Сонголт)</span>
-                    </div>
+              <div className="pt-3 border-t border-blue-900/40 space-y-1.5 text-[9px] text-blue-300/70 font-mono flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-sm"></div>
+                    <span>Ирц бүртгүүлсэн (Ирсэн)</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 bg-blue-950/40 border border-blue-900/20 rounded-sm"></div>
+                    <span>Ороогүй (Ирээгүй)</span>
+                  </div>
+                </div>
               </div>
 
             </div>

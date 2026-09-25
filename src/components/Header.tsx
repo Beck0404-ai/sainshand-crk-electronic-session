@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Clock, MapPin, Calendar, Award, User, LogOut } from 'lucide-react';
+import { Shield, Clock, MapPin, Calendar, Award, User, LogOut, Search } from 'lucide-react';
 import { Delegate, CRKMeeting } from '../types.js';
 
 interface HeaderProps {
@@ -13,6 +13,7 @@ interface HeaderProps {
   delegates: Delegate[];
   meeting: CRKMeeting | null;
   onLogout: () => void;
+  onOpenSearch?: () => void;
 }
 
 export default function Header({
@@ -20,7 +21,8 @@ export default function Header({
   currentDelegateId,
   delegates,
   meeting,
-  onLogout
+  onLogout,
+  onOpenSearch
 }: HeaderProps) {
   const [time, setTime] = useState(new Date());
 
@@ -91,6 +93,19 @@ export default function Header({
               <div className="text-xs font-bold tracking-wider">{formatMongoTime(time)}</div>
             </div>
           </div>
+
+          {/* Global Search Button */}
+          {onOpenSearch && (
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              title="Нэгдсэн хайлт хийх (Ctrl+K)"
+              className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Search size={13} />
+              <span>Хайлт</span>
+            </button>
+          )}
 
           <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2 text-left hidden sm:flex">
             <Calendar size={14} className="text-slate-500" />
