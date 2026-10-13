@@ -23,35 +23,35 @@ app.use(express.json({ limit: '6mb' }));
 
 // Preseeded list of 29 delegates of Sainshand Soum
 const getInitial29Delegates = (): any[] => [
-  { id: 'rep01', username: 'buyandelger', fullName: 'М.Буяндэлгэр', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011101', email: 'buyandelger@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 45 },
-  { id: 'rep02', username: 'baterdene', fullName: 'Б.Бат-Эрдэнэ', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011102', email: 'baterdene@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 42 },
-  { id: 'rep03', username: 'ganbold', fullName: 'Д.Ганболд', party: 'АН', district: '1-р баг (Нарны баг)', phone: '99011103', email: 'ganbold@sainshand.gov.mn', password: '123', attendedMeetingsCount: 10, votesCastCount: 38 },
-  { id: 'rep04', username: 'erdenetsetseg', fullName: 'Ц.Эрдэнэцэцэг', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011104', email: 'erdenetsetseg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 44 },
-  { id: 'rep05', username: 'altantsetseg', fullName: 'Ш.Алтанцэцэг', party: 'ХҮН', district: '1-р баг (Нарны баг)', phone: '99011105', email: 'altantsetseg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 9, votesCastCount: 35 },
-  { id: 'rep06', username: 'enkhjargal', fullName: 'Г.Энхжаргал', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011106', email: 'enkhjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 40 },
-  { id: 'rep07', username: 'baatar', fullName: 'Н.Баатар', party: 'АН', district: '2-р баг (Өлзийт баг)', phone: '99011107', email: 'baatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 46 },
-  { id: 'rep08', username: 'oyunchimeg', fullName: 'О.Оюунчимэг', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011108', email: 'oyunchimeg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 45 },
-  { id: 'rep09', username: 'boldbaatar', fullName: 'Б.Болдбаатар', party: 'Бие даагч', district: '2-р баг (Өлзийт баг)', phone: '99011109', email: 'boldbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 10, votesCastCount: 37 },
-  { id: 'rep10', username: 'munkhbat', fullName: 'Ч.Мөнхбат', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011110', email: 'munkhbat@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 41 },
-  { id: 'rep11', username: 'lhagvasuren', fullName: 'Л.Лхагвасүрэн', party: 'АН', district: '2-р баг (Өлзийт баг)', phone: '99011111', email: 'lhagvasuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 9, votesCastCount: 34 },
-  { id: 'rep12', username: 'tsendayush', fullName: 'Д.Цэнд-Аюуш', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011112', email: 'tsendayush@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 43 },
-  { id: 'rep13', username: 'otgonbaatar', fullName: 'П.Отгонбаатар', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011113', email: 'otgonbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 45 },
-  { id: 'rep14', username: 'batjargal', fullName: 'С.Батжаргал', party: 'АН', district: '3-р баг (Шандын баг)', phone: '99011114', email: 'batjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 39 },
-  { id: 'rep15', username: 'nyamsuren', fullName: 'Ж.Нямсүрэн', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011115', email: 'nyamsuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 10, votesCastCount: 38 },
-  { id: 'rep16', username: 'munkhjargal', fullName: 'Б.Мөнхжаргал', party: 'ХҮН', district: '3-р баг (Шандын баг)', phone: '99011116', email: 'munkhjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 8, votesCastCount: 30 },
-  { id: 'rep17', username: 'enkhtor', fullName: 'Д.Энхтөр', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011117', email: 'enkhtor@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 42 },
-  { id: 'rep18', username: 'undarmaa', fullName: 'Т.Ундармаа', party: 'АН', district: '3-р баг (Шандын баг)', phone: '99011118', email: 'undarmaa@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 40 },
-  { id: 'rep19', username: 'davaasuren', fullName: 'М.Даваасүрэн', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011119', email: 'davaasuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 44 },
-  { id: 'rep20', username: 'batochir', fullName: 'Г.Бат-Очир', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011120', email: 'batochir@sainshand.gov.mn', password: '123', attendedMeetingsCount: 10, votesCastCount: 36 },
-  { id: 'rep21', username: 'bolormaa', fullName: 'Ц.Болормаа', party: 'АН', district: '4-р баг (Аргалант баг)', phone: '99011121', email: 'bolormaa@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 39 },
-  { id: 'rep22', username: 'gantulga', fullName: 'Р.Гантулга', party: 'Бие даагч', district: '4-р баг (Аргалант баг)', phone: '99011122', email: 'gantulga@sainshand.gov.mn', password: '123', attendedMeetingsCount: 9, votesCastCount: 32 },
-  { id: 'rep23', username: 'chinbat', fullName: 'Б.Чинбат', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011123', email: 'chinbat@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 43 },
-  { id: 'rep24', username: 'tsogtbaatar', fullName: 'Ш.Цогтбаатар', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011124', email: 'tsogtbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 41 },
-  { id: 'rep25', username: 'batzorig', fullName: 'Д.Батзориг', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011125', email: 'batzorig@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 45 },
-  { id: 'rep26', username: 'enkhmandakh', fullName: 'А.Энхмандах', party: 'АН', district: '5-р баг (Баянхангүй баг)', phone: '99011126', email: 'enkhmandakh@sainshand.gov.mn', password: '123', attendedMeetingsCount: 10, votesCastCount: 38 },
-  { id: 'rep27', username: 'oyuntuya', fullName: 'Ц.Оюунтуяа', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011127', email: 'oyuntuya@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 44 },
-  { id: 'rep28', username: 'munkherden', fullName: 'Х.Мөнх-Эрдэнэ', party: 'ХҮН', district: '5-р баг (Баянхангүй баг)', phone: '99011128', email: 'munkherden@sainshand.gov.mn', password: '123', attendedMeetingsCount: 11, votesCastCount: 37 },
-  { id: 'rep29', username: 'batultzi', fullName: 'З.Бат-Өлзий', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011129', email: 'batultzi@sainshand.gov.mn', password: '123', attendedMeetingsCount: 12, votesCastCount: 46 },
+  { id: 'rep01', username: 'buyandelger', fullName: 'М.Буяндэлгэр', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011101', email: 'buyandelger@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep02', username: 'baterdene', fullName: 'Б.Бат-Эрдэнэ', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011102', email: 'baterdene@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep03', username: 'ganbold', fullName: 'Д.Ганболд', party: 'АН', district: '1-р баг (Нарны баг)', phone: '99011103', email: 'ganbold@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep04', username: 'erdenetsetseg', fullName: 'Ц.Эрдэнэцэцэг', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011104', email: 'erdenetsetseg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep05', username: 'altantsetseg', fullName: 'Ш.Алтанцэцэг', party: 'ХҮН', district: '1-р баг (Нарны баг)', phone: '99011105', email: 'altantsetseg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep06', username: 'enkhjargal', fullName: 'Г.Энхжаргал', party: 'МАН', district: '1-р баг (Нарны баг)', phone: '99011106', email: 'enkhjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep07', username: 'baatar', fullName: 'Н.Баатар', party: 'АН', district: '2-р баг (Өлзийт баг)', phone: '99011107', email: 'baatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep08', username: 'oyunchimeg', fullName: 'О.Оюунчимэг', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011108', email: 'oyunchimeg@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep09', username: 'boldbaatar', fullName: 'Б.Болдбаатар', party: 'Бие даагч', district: '2-р баг (Өлзийт баг)', phone: '99011109', email: 'boldbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep10', username: 'munkhbat', fullName: 'Ч.Мөнхбат', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011110', email: 'munkhbat@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep11', username: 'lhagvasuren', fullName: 'Л.Лхагвасүрэн', party: 'АН', district: '2-р баг (Өлзийт баг)', phone: '99011111', email: 'lhagvasuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep12', username: 'tsendayush', fullName: 'Д.Цэнд-Аюуш', party: 'МАН', district: '2-р баг (Өлзийт баг)', phone: '99011112', email: 'tsendayush@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep13', username: 'otgonbaatar', fullName: 'П.Отгонбаатар', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011113', email: 'otgonbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep14', username: 'batjargal', fullName: 'С.Батжаргал', party: 'АН', district: '3-р баг (Шандын баг)', phone: '99011114', email: 'batjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep15', username: 'nyamsuren', fullName: 'Ж.Нямсүрэн', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011115', email: 'nyamsuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep16', username: 'munkhjargal', fullName: 'Б.Мөнхжаргал', party: 'ХҮН', district: '3-р баг (Шандын баг)', phone: '99011116', email: 'munkhjargal@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep17', username: 'enkhtor', fullName: 'Д.Энхтөр', party: 'МАН', district: '3-р баг (Шандын баг)', phone: '99011117', email: 'enkhtor@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep18', username: 'undarmaa', fullName: 'Т.Ундармаа', party: 'АН', district: '3-р баг (Шандын баг)', phone: '99011118', email: 'undarmaa@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep19', username: 'davaasuren', fullName: 'М.Даваасүрэн', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011119', email: 'davaasuren@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep20', username: 'batochir', fullName: 'Г.Бат-Очир', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011120', email: 'batochir@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep21', username: 'bolormaa', fullName: 'Ц.Болормаа', party: 'АН', district: '4-р баг (Аргалант баг)', phone: '99011121', email: 'bolormaa@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep22', username: 'gantulga', fullName: 'Р.Гантулга', party: 'Бие даагч', district: '4-р баг (Аргалант баг)', phone: '99011122', email: 'gantulga@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep23', username: 'chinbat', fullName: 'Б.Чинбат', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011123', email: 'chinbat@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep24', username: 'tsogtbaatar', fullName: 'Ш.Цогтбаатар', party: 'МАН', district: '4-р баг (Аргалант баг)', phone: '99011124', email: 'tsogtbaatar@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep25', username: 'batzorig', fullName: 'Д.Батзориг', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011125', email: 'batzorig@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep26', username: 'enkhmandakh', fullName: 'А.Энхмандах', party: 'АН', district: '5-р баг (Баянхангүй баг)', phone: '99011126', email: 'enkhmandakh@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep27', username: 'oyuntuya', fullName: 'Ц.Оюунтуяа', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011127', email: 'oyuntuya@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep28', username: 'munkherden', fullName: 'Х.Мөнх-Эрдэнэ', party: 'ХҮН', district: '5-р баг (Баянхангүй баг)', phone: '99011128', email: 'munkherden@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
+  { id: 'rep29', username: 'batultzi', fullName: 'З.Бат-Өлзий', party: 'МАН', district: '5-р баг (Баянхангүй баг)', phone: '99011129', email: 'batultzi@sainshand.gov.mn', password: '123', attendedMeetingsCount: 0, votesCastCount: 0 },
 ];
 
 const seedDelegates: any[] = getInitial29Delegates();
@@ -890,10 +890,14 @@ app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
       title: '',
       votes: {}
     };
+    serverMeeting.attendance = {};
     serverMeeting.speakerQueue = [];
     serverMeeting.currentSpeaker = null;
+    serverMeeting.agendaComments = [];
     await dbSave('meeting', serverMeeting);
   }
+  serverMeetingHistory = [];
+  await dbSave('meeting_history', serverMeetingHistory);
   serverNotifications = [];
   await dbSave('notifications', serverNotifications);
 
