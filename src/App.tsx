@@ -272,7 +272,7 @@ export default function App() {
     await refreshState();
   };
 
-  const updateProfile = async (data: { phone: string; email: string; bio: string; avatarUrl?: string }) => {
+  const updateProfile = async (data: { phone: string; email: string; bio: string; avatarUrl?: string; materialNotes?: Record<string, string> }) => {
     if (!currentDelegateId) return;
     await fetch('/api/profile/update', {
       method: 'POST',
@@ -280,6 +280,34 @@ export default function App() {
       body: JSON.stringify({ delegateId: currentDelegateId, ...data })
     });
     await refreshState();
+  };
+
+  const saveMaterialNote = async (materialId: string, text: string) => {
+    if (!currentDelegateId) return;
+    try {
+      await fetch('/api/delegate/note/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delegateId: currentDelegateId, materialId, text })
+      });
+      await refreshState();
+    } catch (e) {
+      console.warn('Failed to save note on server:', e);
+    }
+  };
+
+  const deleteMaterialNote = async (materialId: string) => {
+    if (!currentDelegateId) return;
+    try {
+      await fetch('/api/delegate/note/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delegateId: currentDelegateId, materialId })
+      });
+      await refreshState();
+    } catch (e) {
+      console.warn('Failed to delete note on server:', e);
+    }
   };
 
   // Administrator actions
@@ -714,6 +742,8 @@ export default function App() {
             onLeaveSpeakerQueue={leaveSpeakerQueue}
             onSubmitVote={submitVote}
             onUpdateProfile={updateProfile}
+            onSaveMaterialNote={saveMaterialNote}
+            onDeleteMaterialNote={deleteMaterialNote}
             onLogout={handleLogout}
             onSubmitComment={async (agendaItemId, text) => {
               await fetch('/api/delegate/agenda/comment', {

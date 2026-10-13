@@ -515,19 +515,48 @@ app.post('/api/vote/submit', (req: Request, res: Response) => {
 });
 
 // Delegate updates profile (Delegate action)
-app.post('/api/profile/update', (req: Request, res: Response) => {
-  const { delegateId, phone, email, bio, avatarUrl } = req.body;
+app.post('/api/profile/update', async (req: Request, res: Response) => {
+  const { delegateId, phone, email, bio, avatarUrl, materialNotes } = req.body;
   const d = seedDelegates.find(x => x.id === delegateId);
   if (d) {
     d.phone = phone || d.phone;
     d.email = email || d.email;
     if (bio !== undefined) d.bio = bio;
     if (avatarUrl !== undefined) d.avatarUrl = avatarUrl;
+    if (materialNotes !== undefined) d.materialNotes = materialNotes;
+    await dbSave('delegates', seedDelegates);
     broadcastState();
     res.json({ success: true, delegate: d });
   } else {
     res.status(404).json({ error: 'Delegate not found' });
   }
+});
+
+app.post('/api/delegate/note/save', async (req: Request, res: Response) => {
+  const { delegateId, materialId, text } = req.body;
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Delegate not found' });
+  if (!d.materialNotes) d.materialNotes = {};
+  if (!text || !text.trim()) {
+    delete d.materialNotes[materialId];
+  } else {
+    d.materialNotes[materialId] = text;
+  }
+  await dbSave('delegates', seedDelegates);
+  broadcastState();
+  res.json({ success: true, materialNotes: d.materialNotes });
+});
+
+app.post('/api/delegate/note/delete', async (req: Request, res: Response) => {
+  const { delegateId, materialId } = req.body;
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Delegate not found' });
+  if (d.materialNotes && d.materialNotes[materialId]) {
+    delete d.materialNotes[materialId];
+    await dbSave('delegates', seedDelegates);
+    broadcastState();
+  }
+  res.json({ success: true, materialNotes: d.materialNotes || {} });
 });
 
 // User Auth login (for both Admin and Delegates)

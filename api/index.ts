@@ -230,10 +230,43 @@ app.post('/api/vote/submit', (req: Request, res: Response) => {
 });
 
 app.post('/api/profile/update', (req: Request, res: Response) => {
-  const { delegateId, phone, email, bio } = req.body;
+  const { delegateId, phone, email, bio, avatarUrl, materialNotes } = req.body;
   const d = seedDelegates.find(x => x.id === delegateId);
-  if (d) { d.phone = phone || d.phone; d.email = email || d.email; d.bio = bio || d.bio; broadcastState(); return res.json({ success: true }); }
+  if (d) {
+    d.phone = phone || d.phone;
+    d.email = email || d.email;
+    if (bio !== undefined) d.bio = bio;
+    if (avatarUrl !== undefined) d.avatarUrl = avatarUrl;
+    if (materialNotes !== undefined) d.materialNotes = materialNotes;
+    broadcastState();
+    return res.json({ success: true, delegate: d });
+  }
   res.status(404).json({ error: 'Delegate not found' });
+});
+
+app.post('/api/delegate/note/save', (req: Request, res: Response) => {
+  const { delegateId, materialId, text } = req.body;
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Delegate not found' });
+  if (!d.materialNotes) d.materialNotes = {};
+  if (!text || !text.trim()) {
+    delete d.materialNotes[materialId];
+  } else {
+    d.materialNotes[materialId] = text;
+  }
+  broadcastState();
+  res.json({ success: true, materialNotes: d.materialNotes });
+});
+
+app.post('/api/delegate/note/delete', (req: Request, res: Response) => {
+  const { delegateId, materialId } = req.body;
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return res.status(404).json({ error: 'Delegate not found' });
+  if (d.materialNotes && d.materialNotes[materialId]) {
+    delete d.materialNotes[materialId];
+    broadcastState();
+  }
+  res.json({ success: true, materialNotes: d.materialNotes || {} });
 });
 
 app.post('/api/admin/attendance/toggle', (req: Request, res: Response) => {

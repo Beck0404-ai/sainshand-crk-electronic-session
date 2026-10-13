@@ -16,6 +16,7 @@ export interface Delegate {
   password?: string;
   attendedMeetingsCount: number;
   votesCastCount: number;
+  materialNotes?: Record<string, string>; // materialId -> note text
 }
 
 export interface AgendaMaterial {

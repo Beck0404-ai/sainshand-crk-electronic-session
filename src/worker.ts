@@ -272,18 +272,46 @@ app.post('/api/vote/submit', async (c) => {
 });
 
 app.post('/api/profile/update', async (c) => {
-  const { delegateId, phone, email, bio, avatarUrl } = await c.req.json();
+  const { delegateId, phone, email, bio, avatarUrl, materialNotes } = await c.req.json();
   const d = seedDelegates.find(x => x.id === delegateId);
   if (d) {
     d.phone = phone || d.phone;
     d.email = email || d.email;
-    d.bio = bio || d.bio;
-    if (avatarUrl) d.avatarUrl = avatarUrl;
+    d.bio = bio !== undefined ? bio : d.bio;
+    if (avatarUrl !== undefined) d.avatarUrl = avatarUrl;
+    if (materialNotes !== undefined) d.materialNotes = materialNotes;
     appVersion += 1;
     await saveStateToDB();
-    return c.json({ success: true });
+    return c.json({ success: true, delegate: d });
   }
   return c.json({ error: 'Delegate not found' }, 404);
+});
+
+app.post('/api/delegate/note/save', async (c) => {
+  const { delegateId, materialId, text } = await c.req.json();
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return c.json({ error: 'Delegate not found' }, 404);
+  if (!d.materialNotes) d.materialNotes = {};
+  if (!text || !text.trim()) {
+    delete d.materialNotes[materialId];
+  } else {
+    d.materialNotes[materialId] = text;
+  }
+  appVersion += 1;
+  await saveStateToDB();
+  return c.json({ success: true, materialNotes: d.materialNotes });
+});
+
+app.post('/api/delegate/note/delete', async (c) => {
+  const { delegateId, materialId } = await c.req.json();
+  const d = seedDelegates.find(x => x.id === delegateId);
+  if (!d) return c.json({ error: 'Delegate not found' }, 404);
+  if (d.materialNotes && d.materialNotes[materialId]) {
+    delete d.materialNotes[materialId];
+    appVersion += 1;
+    await saveStateToDB();
+  }
+  return c.json({ success: true, materialNotes: d.materialNotes || {} });
 });
 
 // Admin endpoints

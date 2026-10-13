@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Delegate, CRKMeeting, NotificationItem, AgendaMaterial } from '../types.js';
 import {
   CheckCircle, Clock, Volume2, AlertTriangle, FileText,
@@ -21,7 +21,9 @@ interface DelegateDashboardProps {
   onJoinSpeakerQueue: () => Promise<void>;
   onLeaveSpeakerQueue: () => Promise<void>;
   onSubmitVote: (choice: 'Батлах' | 'Татгалзах' | 'Санал гаргах' | 'Зөвшөөрсөн' | 'Татгалзсан' | 'Түтгэлзсэн') => Promise<void>;
-  onUpdateProfile: (data: { phone: string; email: string; bio: string; avatarUrl?: string }) => Promise<void>;
+  onUpdateProfile: (data: { phone: string; email: string; bio: string; avatarUrl?: string; materialNotes?: Record<string, string> }) => Promise<void>;
+  onSaveMaterialNote?: (materialId: string, text: string) => Promise<void>;
+  onDeleteMaterialNote?: (materialId: string) => Promise<void>;
   onLogout: () => void;
   onSubmitComment?: (agendaItemId: string, text: string) => Promise<void>;
 }
@@ -36,6 +38,8 @@ export default function DelegateDashboard({
   onLeaveSpeakerQueue,
   onSubmitVote,
   onUpdateProfile,
+  onSaveMaterialNote,
+  onDeleteMaterialNote,
   onLogout,
   onSubmitComment
 }: DelegateDashboardProps) {
@@ -115,7 +119,7 @@ export default function DelegateDashboard({
 
   // Delegate Profile Modal States
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileTab, setProfileTab] = useState<'info' | 'stats' | 'security'>('info');
+  const [profileTab, setProfileTab] = useState<'info' | 'stats' | 'security' | 'notes'>('info');
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -176,15 +180,29 @@ export default function DelegateDashboard({
   // Keyword Search in Agenda Materials
   const [matSearchQuery, setMatSearchQuery] = useState('');
 
-  // Personal Sticky Notes for Agenda Materials (localStorage persisted)
+  // Personal Sticky Notes for Agenda Materials (synced with user's profile in DB and localStorage)
   const [materialNotes, setMaterialNotes] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem(`material_notes_${delegate.id}`);
-      return saved ? JSON.parse(saved) : {};
+      const localNotes = saved ? JSON.parse(saved) : {};
+      return { ...localNotes, ...(delegate.materialNotes || {}) };
     } catch {
-      return {};
+      return delegate.materialNotes || {};
     }
   });
+
+  const [noteSaveStatus, setNoteSaveStatus] = useState<Record<string, 'saved' | 'saving'>>({});
+  const saveTimersRef = useRef<Record<string, any>>({});
+
+  // Sync if delegate.materialNotes updates from backend
+  useEffect(() => {
+    if (delegate.materialNotes) {
+      setMaterialNotes(prev => ({
+        ...prev,
+        ...delegate.materialNotes
+      }));
+    }
+  }, [delegate.materialNotes]);
 
   const handleSaveMaterialNote = (materialId: string, text: string) => {
     const updated = { ...materialNotes, [materialId]: text };
@@ -194,6 +212,74 @@ export default function DelegateDashboard({
     } catch (e) {
       console.warn('Failed to save note to localStorage:', e);
     }
+
+    setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saving' }));
+
+    if (saveTimersRef.current[materialId]) {
+      clearTimeout(saveTimersRef.current[materialId]);
+    }
+
+    saveTimersRef.current[materialId] = setTimeout(async () => {
+      try {
+        if (onSaveMaterialNote) {
+          await onSaveMaterialNote(materialId, text);
+        } else {
+          await fetch('/api/delegate/note/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delegateId: delegate.id, materialId, text })
+          });
+        }
+        setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saved' }));
+      } catch (err) {
+        console.error('Failed to sync note to profile:', err);
+      }
+    }, 600);
+  };
+
+  const handleDeleteMaterialNote = async (materialId: string) => {
+    const updated = { ...materialNotes };
+    delete updated[materialId];
+    setMaterialNotes(updated);
+    try {
+      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to save note to localStorage:', e);
+    }
+    try {
+      if (onDeleteMaterialNote) {
+        await onDeleteMaterialNote(materialId);
+      } else {
+        await fetch('/api/delegate/note/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delegateId: delegate.id, materialId })
+        });
+      }
+      showProfileToastMsg('✓ Тэмдэглэлийг амжилттай устгалаа.');
+    } catch (err) {
+      console.error('Failed to delete note from profile:', err);
+    }
+  };
+
+  const getNoteMaterialInfo = (materialId: string) => {
+    if (meeting?.agenda) {
+      for (const ag of meeting.agenda) {
+        const mat = ag.materials?.find(m => m.id === materialId);
+        if (mat) {
+          return {
+            agendaTitle: ag.title,
+            materialTitle: mat.title,
+            fileType: mat.fileType
+          };
+        }
+      }
+    }
+    return {
+      agendaTitle: 'ИТХ-ын хуралдааны асуудал',
+      materialTitle: `Хавсаргасан баримт #${materialId}`,
+      fileType: 'pdf'
+    };
   };
 
   const playTimerBeep = () => {
@@ -953,7 +1039,26 @@ export default function DelegateDashboard({
                                              <span className="flex items-center gap-1.5">
                                                <FileEdit size={13} className="text-amber-600" /> Миний хувийн тэмдэглэл (Sticky Note)
                                              </span>
-                                             <span className="text-[9px] text-amber-700 font-mono">🔒 Зөвхөн танд харагдана</span>
+                                             <div className="flex items-center gap-2">
+                                               {noteSaveStatus[mat.id] === 'saving' ? (
+                                                 <span className="text-[9px] text-amber-700 font-mono flex items-center gap-1 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
+                                                   Профайлд хадгалж байна...
+                                                 </span>
+                                               ) : materialNotes[mat.id]?.trim() ? (
+                                                 <span className="text-[9px] text-emerald-800 font-mono font-bold flex items-center gap-1 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                                   ✓ Профайлд хадгалагдсан
+                                                 </span>
+                                               ) : (
+                                                 <span className="text-[9px] text-amber-700/80 font-mono">
+                                                   ☁️ Профайлд хадгалагдана
+                                                 </span>
+                                               )}
+                                               <span className="text-[9px] text-amber-800 font-mono flex items-center gap-0.5">
+                                                 <Lock size={10} /> Зөвхөн танд харагдана
+                                               </span>
+                                             </div>
                                            </div>
                                            <textarea
                                              value={materialNotes[mat.id] || ''}
@@ -1265,8 +1370,22 @@ export default function DelegateDashboard({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setProfileTab('notes')}
+                    className={`pb-3 px-1 transition border-b-2 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      profileTab === 'notes' ? 'border-amber-600 text-amber-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    📝 Миний тэмдэглэлүүд
+                    {Object.entries(materialNotes).filter(([_, t]) => t?.trim()).length > 0 && (
+                      <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300">
+                        {Object.entries(materialNotes).filter(([_, t]) => t?.trim()).length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setProfileTab('security')}
-                    className={`pb-3 px-1 transition border-b-2 cursor-pointer ${
+                    className={`pb-3 px-1 transition border-b-2 cursor-pointer whitespace-nowrap ${
                       profileTab === 'security' ? 'border-blue-600 text-blue-600 font-black' : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -1399,6 +1518,83 @@ export default function DelegateDashboard({
                   </form>
                 )}
 
+                {/* TAB 4: MY PERSONAL NOTES */}
+                {profileTab === 'notes' && (
+                  <div className="space-y-4">
+                    <div className="bg-amber-50/70 border border-amber-200/80 p-4 rounded-2xl flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-amber-900 flex items-center gap-2 text-xs">
+                          <FileEdit size={14} className="text-amber-600" /> Миний хувийн тэмдэглэлүүд (Sticky Notes)
+                        </h4>
+                        <p className="text-[11px] text-amber-800/80 mt-1 leading-relaxed">
+                          Эдгээр тэмдэглэлүүд нь зөвхөн таны хувийн профайлд найдвартай хадгалагддаг бөгөөд бусад төлөөлөгч болон админд харагдахгүй.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-300 flex-shrink-0">
+                        Нийт {Object.entries(materialNotes).filter(([_, t]) => t?.trim()).length} тэмдэглэл
+                      </span>
+                    </div>
+
+                    {Object.entries(materialNotes).filter(([_, t]) => t?.trim()).length === 0 ? (
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center space-y-2">
+                        <div className="h-12 w-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto border border-amber-200">
+                          <FileEdit size={24} />
+                        </div>
+                        <h5 className="font-bold text-slate-800 text-xs">Одоогоор хадгалсан тэмдэглэл алга байна</h5>
+                        <p className="text-[11px] text-slate-500 max-w-sm mx-auto leading-relaxed">
+                          Хуралдааны хэлэлцэх асуудлын материал дээр байрлах "Миний хувийн тэмдэглэл (Sticky Note)" хэсэгт бичсэнээр энд автоматаар найдвартай хадгалагдана.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        {Object.entries(materialNotes)
+                          .filter(([_, t]) => t?.trim())
+                          .map(([matId, noteText]) => {
+                            const info = getNoteMaterialInfo(matId);
+                            return (
+                              <div key={matId} className="bg-white border border-amber-200/90 rounded-2xl p-3.5 shadow-sm space-y-2">
+                                <div className="flex items-start justify-between gap-2 border-b border-amber-100 pb-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-[10px] font-bold text-amber-800 truncate flex items-center gap-1.5">
+                                      <BookOpen size={11} className="text-blue-600 flex-shrink-0" />
+                                      <span>{info.agendaTitle}</span>
+                                    </div>
+                                    <div className="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5 mt-0.5">
+                                      <FileText size={12} className="text-rose-500 flex-shrink-0" />
+                                      <span>{info.materialTitle}</span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMaterialNote(matId)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer flex-shrink-0"
+                                    title="Тэмдэглэл устгах"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                                <textarea
+                                  value={noteText}
+                                  onChange={(e) => handleSaveMaterialNote(matId, e.target.value)}
+                                  rows={2}
+                                  className="w-full text-xs p-2 bg-amber-50/50 border border-amber-200 rounded-xl text-slate-800 outline-none focus:border-amber-400 resize-none font-sans"
+                                  placeholder="Тэмдэглэл бичих..."
+                                />
+                                <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono pt-0.5">
+                                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                    Профайлд хадгалагдсан
+                                  </span>
+                                  <span>Өөрчлөхөд автоматаар шинэчлэгдэнэ</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* TAB 2: STATS */}
                 {profileTab === 'stats' && (
                   <div className="space-y-4">
@@ -1415,9 +1611,17 @@ export default function DelegateDashboard({
                         <span className="block text-2xl font-black text-purple-700 font-mono">96%</span>
                         <span className="text-[10px] font-bold text-purple-800 uppercase tracking-wider mt-1 block">Ирцийн хувь</span>
                       </div>
-                      <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl">
-                        <span className="block text-2xl font-black text-amber-700 font-mono">{Object.keys(materialNotes).length}</span>
-                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mt-1 block">Хувийн тэмдэглэл</span>
+                      <div
+                        onClick={() => setProfileTab('notes')}
+                        className="bg-amber-50 hover:bg-amber-100/80 border border-amber-200 p-3.5 rounded-2xl cursor-pointer transition shadow-xs group"
+                        title="Дарж хувийн тэмдэглэлүүдээ үзэх"
+                      >
+                        <span className="block text-2xl font-black text-amber-700 font-mono group-hover:scale-105 transition-transform">
+                          {Object.entries(materialNotes).filter(([_, t]) => t?.trim()).length}
+                        </span>
+                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mt-1 block flex items-center justify-center gap-1">
+                          Хувийн тэмдэглэл <span className="text-amber-600 font-normal">→</span>
+                        </span>
                       </div>
                     </div>
 
