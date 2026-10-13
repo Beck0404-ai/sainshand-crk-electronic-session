@@ -943,18 +943,20 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
     // Build context about the current meeting
     let meetingContext = 'Одоогоор идэвхтэй хуралдаан зарлагдаагүй байна.';
     if (serverMeeting) {
-      const activeAgenda = serverMeeting.agenda.find(a => a.id === serverMeeting.activeAgendaItemId);
-      const agendaList = serverMeeting.agenda.map(a => `${a.order}. ${a.title} (${a.materials?.length || 0} материалтай)`).join('\n');
-      const presentCount = Object.keys(serverMeeting.attendance).length;
+      const activeAgenda = serverMeeting.agenda?.find(a => a.id === serverMeeting?.activeAgendaItemId);
+      const agendaList = (serverMeeting.agenda || []).map(a => `${a.order}. ${a.title} (${a.materials?.length || 0} материалтай)`).join('\n');
+      const presentCount = Object.keys(serverMeeting.attendance || {}).length;
+      const isVoting = serverMeeting.voting?.active;
+      const votingTitle = serverMeeting.voting?.title || 'Санал хураалт';
       meetingContext = `
-Хуралдааны нэр: ${serverMeeting.title}
-Огноо, цаг: ${serverMeeting.date} ${serverMeeting.time}
-Төлөв: ${serverMeeting.status}
+Хуралдааны нэр: ${serverMeeting.title || 'ИТХ хуралдаан'}
+Огноо, цаг: ${serverMeeting.date || ''} ${serverMeeting.time || ''}
+Төлөв: ${serverMeeting.status || ''}
 Нийт ирц: ${presentCount} төлөөлөгч танхимд бүртгүүлсэн байна.
 Хэлэлцэх асуудлууд:
 ${agendaList}
 Одоо хэлэлцэж буй асуудал: ${activeAgenda ? activeAgenda.title : 'Тодорхойгүй'}
-Санал хураалтын төлөв: ${serverMeeting.voting.active ? `Санал хураалт явагдаж байна ("${serverMeeting.voting.title}")` : 'Идэвхгүй'}
+Санал хураалтын төлөв: ${isVoting ? `Санал хураалт явагдаж байна ("${votingTitle}")` : 'Идэвхгүй'}
 `;
     }
 
