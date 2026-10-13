@@ -23,7 +23,7 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
   const initialGreeting: Message = {
     id: 'welcome-msg',
     role: 'assistant',
-    content: `Сайн байна уу! Би Сайншанд сумын Иргэдийн Төлөөлөгчдийн Хурлын (ИТХ) албан ёсны **Gemini AI Ухаалаг Туслах** байна. 🏛️✨\n\nТанд дараах чиглэлээр туслахад бэлэн байна:\n• Хэлэлцэх асуудлын материал, төслийг нэгтгэн дүгнэх\n• ИТХ-ын хуралдааны дэг, хууль эрх зүйн зөвлөгөө\n• Төлөөлөгчийн үг хэлэх санал, асуулт найруулах\n• Хуралдааны тогтоолын төсөл боловсруулах`,
+    content: `Сайн байна уу! Би Сайншанд сумын Иргэдийн Төлөөлөгчдийн Хурлын албан ёсны **AI Ухаалаг Туслах Beck** байна. 🏛️✨\n\nТанд дараах чиглэлээр туслахад бэлэн байна:\n• Хэлэлцэх асуудлын материал, төслийг нэгтгэн дүгнэх\n• ИТХ-ын хуралдааны дэг, хууль эрх зүйн зөвлөгөө\n• Төлөөлөгчийн үг хэлэх санал, асуулт найруулах\n• Хуралдааны тогтоолын төсөл боловсруулах`,
     timestamp: Date.now()
   };
 
@@ -160,7 +160,7 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
           <button
             onClick={() => setIsOpen(true)}
             className="group relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl hover:shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-300 border border-blue-400/30"
-            title="Сайншанд ИТХ-ын Gemini AI Туслах"
+            title="Сайншанд ИТХ-ын AI Ухаалаг Туслах Beck"
           >
             {/* Animated ping glow */}
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
@@ -174,8 +174,8 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
 
             <div className="text-left font-sans">
               <div className="text-xs font-bold tracking-wide flex items-center gap-1">
-                <span>AI ТУСЛАХ</span>
-                <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-mono uppercase">Gemini</span>
+                <span>AI ТУСЛАХ BECK</span>
+                <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-mono uppercase">AI</span>
               </div>
               <div className="text-[9px] text-blue-100 opacity-90">Сайншанд ИТХ</div>
             </div>
@@ -195,12 +195,12 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-sm text-white tracking-wide">Сайншанд ИТХ • AI Туслах</h3>
+                  <h3 className="font-bold text-sm text-white tracking-wide">Сайншанд ИТХ • AI Туслах Beck</h3>
                   <span className="text-[8px] bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 px-1.5 py-0.5 rounded-full font-mono font-bold">
                     ONLINE
                   </span>
                 </div>
-                <p className="text-[10px] text-blue-200/80 font-mono">Google Gemini Flash Engine</p>
+                <p className="text-[10px] text-blue-200/80 font-mono">Beck AI Engine • Gemini Flash</p>
               </div>
             </div>
 
@@ -303,7 +303,7 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
                     <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <span className="text-[11px] text-slate-500 dark:text-blue-300 font-mono">Gemini тунгаан бодож байна...</span>
+                  <span className="text-[11px] text-slate-500 dark:text-blue-300 font-mono">Beck тунгаан бодож байна...</span>
                 </div>
               </div>
             )}
