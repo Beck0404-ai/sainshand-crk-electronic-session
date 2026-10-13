@@ -200,7 +200,7 @@ export const GeminiChatbot: React.FC<GeminiChatbotProps> = ({ appState, currentR
                     ONLINE
                   </span>
                 </div>
-                <p className="text-[10px] text-blue-200/80 font-mono">Beck AI Engine • Gemini Flash</p>
+                <p className="text-[10px] text-blue-200/80 font-mono">Powered by Beck</p>
               </div>
             </div>
 
