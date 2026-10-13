@@ -813,7 +813,7 @@ ${meetingContext}`;
     if (!response.ok) {
       const errText = await response.text();
       console.error('Gemini API Error:', response.status, errText);
-      return c.json({ error: 'AI үйлчилгээтэй холбогдоход алдаа гарлаа.' }, 500);
+      return c.json({ error: 'AI үйлчилгээтэй холбогдоход алдаа гарлаа.', status: response.status, details: errText }, 500);
     }
 
     const data: any = await response.json();
