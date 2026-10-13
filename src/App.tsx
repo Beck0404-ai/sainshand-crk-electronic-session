@@ -16,6 +16,7 @@ import DelegateDashboard from './components/DelegateDashboard.js';
 import AdminDashboard from './components/AdminDashboard.js';
 import ProjectorView from './components/ProjectorView.js';
 import GlobalSearchModal from './components/GlobalSearchModal.js';
+import { GeminiChatbot } from './components/GeminiChatbot.js';
 import { Shield, Users, Monitor, ChevronRight, Landmark, UserPlus } from 'lucide-react';
 
 export default function App() {
@@ -778,6 +779,14 @@ export default function App() {
         allDelegates={delegates}
         meetingHistory={meetingHistory}
       />
+
+      {/* Gemini AI Chatbot Floating Assistant */}
+      {currentRole !== 'projector' && (
+        <GeminiChatbot
+          appState={appState}
+          currentRole={currentRole}
+        />
+      )}
 
       {/* Small subtle page footer */}
       {currentRole !== 'projector' && (
