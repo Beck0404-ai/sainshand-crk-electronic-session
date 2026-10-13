@@ -1022,33 +1022,56 @@ ${meetingContext}`;
       parts: [{ text: message }]
     });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`;
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': apiKey
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024
-        }
-      })
-    });
+    const candidateModels = [
+      'gemini-3.5-flash',
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-latest'
+    ];
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API Error:', response.status, errText);
-      return res.status(500).json({ error: 'AI үйлчилгээтэй холбогдоход алдаа гарлаа.', status: response.status, details: errText });
+    let replyText: string | null = null;
+    let lastErrorStatus = 500;
+    let lastErrorDetails = '';
+
+    for (const model of candidateModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const response = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1024
+            }
+          })
+        });
+
+        if (response.ok) {
+          const data: any = await response.json();
+          replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (replyText) break;
+        } else {
+          lastErrorStatus = response.status;
+          lastErrorDetails = await response.text();
+          console.warn(`Model ${model} returned ${response.status}, trying fallback...`);
+        }
+      } catch (err: any) {
+        console.warn(`Model ${model} fetch failed:`, err?.message);
+      }
     }
 
-    const data = await response.json();
-    const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Хариулт үүсгэх боломжгүй байна.';
+    if (!replyText) {
+      return res.status(500).json({ error: 'AI үйлчилгээтэй холбогдоход алдаа гарлаа.', status: lastErrorStatus, details: lastErrorDetails });
+    }
+
     res.json({ reply: replyText });
   } catch (error) {
     console.error('AI chat endpoint error:', error);
