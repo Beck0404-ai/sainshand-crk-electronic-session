@@ -819,9 +819,9 @@ ${meetingContext}`;
     const data: any = await response.json();
     const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Хариулт үүсгэх боломжгүй байна.';
     return c.json({ reply: replyText });
-  } catch (error) {
+  } catch (error: any) {
     console.error('AI chat worker error:', error);
-    return c.json({ error: 'Сервер дээр алдаа гарлаа.' }, 500);
+    return c.json({ error: error?.message || String(error) }, 500);
   }
 });
 
