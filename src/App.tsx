@@ -102,21 +102,9 @@ export default function App() {
     };
   }, [appState?.meeting?.voting.active, appState?.meeting?.attendanceOpen]);
 
-  if (!appState) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-6 font-sans">
-        <img src="/logo.png" alt="ИТХ лого" className="h-20 w-20 object-contain mb-4 animate-pulse" />
-        <h2 className="text-sm font-semibold tracking-tight text-slate-700">Сайншанд сумын ИТХ-ын систем</h2>
-        <p className="text-[10px] text-slate-400 mt-1 font-mono tracking-wider">СЕРВЕРТЭЙ ХОЛБОГДОЖ БАЙНА...</p>
-      </div>
-    );
-  }
-
-  const { delegates, meeting, notifications, pendingDelegates, meetingHistory = [] } = appState;
-
   // Clean up cached personal notes when there is no active/ended meeting
   useEffect(() => {
-    if (!meeting) {
+    if (appState && !appState.meeting) {
       try {
         for (let i = localStorage.length - 1; i >= 0; i--) {
           const k = localStorage.key(i);
@@ -128,7 +116,19 @@ export default function App() {
         // ignore
       }
     }
-  }, [meeting]);
+  }, [appState?.meeting]);
+
+  if (!appState) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-6 font-sans">
+        <img src="/logo.png" alt="ИТХ лого" className="h-20 w-20 object-contain mb-4 animate-pulse" />
+        <h2 className="text-sm font-semibold tracking-tight text-slate-700">Сайншанд сумын ИТХ-ын систем</h2>
+        <p className="text-[10px] text-slate-400 mt-1 font-mono tracking-wider">СЕРВЕРТЭЙ ХОЛБОГДОЖ БАЙНА...</p>
+      </div>
+    );
+  }
+
+  const { delegates, meeting, notifications, pendingDelegates, meetingHistory = [] } = appState;
 
   // Global action dispatcher helpers
   const handleRoleChange = (role: 'admin' | 'projector' | 'delegate', delegateId: string | null) => {
