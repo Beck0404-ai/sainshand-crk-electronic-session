@@ -187,7 +187,7 @@ export default function AdminDashboard({
   };
 
   const handleCleanAllArchives = async () => {
-    if (!confirm('Бүх санал хураалтын архив болон мэдэгдлүүдийг цэвэрлэж шинэ болоход итгэлтэй байна уу?')) return;
+    if (!confirm('Бүх санал хураалтын архив, мэдэгдлүүд болон дууссан хурлын түүхийг бүрэн цэвэрлэх үү?')) return;
     if (meeting) {
       meeting.votingArchive = [];
     }
@@ -196,7 +196,7 @@ export default function AdminDashboard({
     const res = await fetch('/api/admin/clean-archives', { method: 'POST' });
     if (res.ok) {
       if (onRefreshState) await onRefreshState();
-      alert('✓ Бүх санал хураалтын архив, мэдэгдлүүдийг бүрэн цэвэрлэж шинэчиллээ.');
+      alert('✓ Бүх архив болон хурлын түүхийг бүрэн цэвэрлэж шинэчиллээ.');
     } else {
       alert('Цэвэрлэхэд алдаа гарлаа.');
     }
@@ -947,6 +947,26 @@ export default function AdminDashboard({
                 >
                   <RotateCcw size={14} />
                   Хуралдаан сэргээх
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (confirm('Энэ хуралдаан болон өмнөх бүх түүхийг цэвэрлэж, ямар ч хурал өмнө болж байгаагүй анхны цэвэр төлөвт оруулах уу?')) {
+                      const res = await fetch('/api/admin/meeting/clear-all', { method: 'POST' });
+                      if (res.ok) {
+                        if (onRefreshState) await onRefreshState();
+                        alert('✓ Хуралдааны түүхийг бүрэн цэвэрлэлээ.');
+                      } else {
+                        alert('Цэвэрлэхэд алдаа гарлаа.');
+                      }
+                    }
+                  }}
+                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold text-xs px-4 py-3 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-transparent hover:border-rose-200"
+                  title="Хурлын түүхийг цэвэрлэх"
+                >
+                  <Trash2 size={14} />
+                  Хурлын түүхийг цэвэрлэх
                 </button>
               </div>
             </div>

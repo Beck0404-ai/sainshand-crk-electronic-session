@@ -194,15 +194,22 @@ export default function DelegateDashboard({
   const [noteSaveStatus, setNoteSaveStatus] = useState<Record<string, 'saved' | 'saving'>>({});
   const saveTimersRef = useRef<Record<string, any>>({});
 
-  // Sync if delegate.materialNotes updates from backend
+  // Sync if delegate.materialNotes updates from backend or if meeting is cleared
   useEffect(() => {
+    if (!meeting) {
+      setMaterialNotes({});
+      try {
+        localStorage.removeItem(`material_notes_${delegate.id}`);
+      } catch {}
+      return;
+    }
     if (delegate.materialNotes) {
       setMaterialNotes(prev => ({
         ...prev,
         ...delegate.materialNotes
       }));
     }
-  }, [delegate.materialNotes]);
+  }, [delegate.materialNotes, meeting]);
 
   const handleSaveMaterialNote = (materialId: string, text: string) => {
     const updated = { ...materialNotes, [materialId]: text };

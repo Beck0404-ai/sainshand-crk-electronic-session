@@ -79,10 +79,11 @@ async function loadStateFromDB() {
       seedDelegates.length = 0; 
       seedDelegates.push(...dels); 
     }
-    if (mtg !== null && mtg !== undefined) serverMeeting = mtg;
-    if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
-    if (notifs !== null && notifs !== undefined) serverNotifications = notifs ?? [];
-    if (hist?.length) serverMeetingHistory = hist;
+    serverMeeting = mtg ?? null;
+    pendingDelegates.length = 0;
+    if (pend?.length) pendingDelegates.push(...pend);
+    serverNotifications = notifs ?? [];
+    serverMeetingHistory = hist ?? [];
   } catch (e) {
     console.error('DB load error:', e);
   }
@@ -685,18 +686,23 @@ app.post('/api/admin/voting-archive/delete', async (c) => {
 
 app.post('/api/admin/clean-archives', async (c) => {
   if (serverMeeting) {
-    serverMeeting.votingArchive = [];
-    serverMeeting.voting = { active: false, agendaItemId: '', title: '', votes: {} };
-    serverMeeting.attendance = {};
-    serverMeeting.speakerQueue = [];
-    serverMeeting.currentSpeaker = null;
-    serverMeeting.agendaComments = [];
+    if (serverMeeting.status === 'дууссан') {
+      serverMeeting = null;
+    } else {
+      serverMeeting.votingArchive = [];
+      serverMeeting.voting = { active: false, agendaItemId: '', title: '', votes: {} };
+      serverMeeting.attendance = {};
+      serverMeeting.speakerQueue = [];
+      serverMeeting.currentSpeaker = null;
+      serverMeeting.agendaComments = [];
+    }
   }
   serverMeetingHistory = [];
   serverNotifications = [];
   seedDelegates.forEach(d => {
     d.attendedMeetingsCount = 0;
     d.votesCastCount = 0;
+    d.materialNotes = {};
   });
   appVersion += 1;
   await saveStateToDB();
@@ -746,8 +752,24 @@ app.post('/api/admin/meeting-history/delete', async (c) => {
   return c.json({ success: true });
 });
 
+app.post('/api/admin/meeting/clear-all', async (c) => {
+  serverMeeting = null;
+  serverMeetingHistory = [];
+  serverNotifications = [];
+  pendingDelegates.length = 0;
+  seedDelegates.forEach(d => {
+    d.attendedMeetingsCount = 0;
+    d.votesCastCount = 0;
+    d.materialNotes = {};
+  });
+  appVersion += 1;
+  await saveStateToDB();
+  return c.json({ success: true });
+});
+
 app.post('/api/system/reset', async (c) => {
   serverMeeting = null;
+  serverMeetingHistory = [];
   seedDelegates.length = 0;
   seedDelegates.push(...getInitial29Delegates());
   pendingDelegates.length = 0;
@@ -755,6 +777,10 @@ app.post('/api/system/reset', async (c) => {
   appVersion += 1;
   await dbClearAll();
   await dbSave('delegates', seedDelegates);
+  await dbSave('meeting', null);
+  await dbSave('meeting_history', []);
+  await dbSave('pending_delegates', []);
+  await dbSave('notifications', []);
   return c.json({ success: true });
 });
 

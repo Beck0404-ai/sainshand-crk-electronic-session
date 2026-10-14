@@ -84,10 +84,11 @@ async function loadStateFromDB() {
       seedDelegates.length = 0;
       seedDelegates.push(...getInitial29Delegates());
     }
-    if (mtg !== null) serverMeeting = mtg;
-    if (pend?.length) { pendingDelegates.length = 0; pendingDelegates.push(...pend); }
-    if (notifs !== null) serverNotifications = notifs ?? [];
-    if (hist?.length) serverMeetingHistory = hist;
+    serverMeeting = mtg ?? null;
+    pendingDelegates.length = 0;
+    if (pend?.length) pendingDelegates.push(...pend);
+    serverNotifications = notifs ?? [];
+    serverMeetingHistory = hist ?? [];
     console.log(`DB: ${seedDelegates.length} delegates, meeting: ${serverMeeting?.id ?? 'none'}, history: ${serverMeetingHistory.length}`);
   } catch (e) {
     console.error('DB load error:', e);
@@ -864,12 +865,38 @@ app.post('/api/admin/voting-archive/delete', async (req: Request, res: Response)
 // Reset entire system back to clean fresh state with preseeded 29 delegates (Admin Tool)
 app.post('/api/system/reset', async (req: Request, res: Response) => {
   serverMeeting = null;
+  serverMeetingHistory = [];
   seedDelegates.length = 0;
   seedDelegates.push(...getInitial29Delegates());
   pendingDelegates.length = 0;
   serverNotifications = [];
   appVersion += 1;
   await dbClearAll();
+  await dbSave('delegates', seedDelegates);
+  await dbSave('meeting', null);
+  await dbSave('meeting_history', []);
+  await dbSave('pending_delegates', []);
+  await dbSave('notifications', []);
+  broadcastState(false);
+  res.json({ success: true });
+});
+
+// Clear all meeting history and reset current meeting to null (Admin Tool)
+app.post('/api/admin/meeting/clear-all', async (req: Request, res: Response) => {
+  serverMeeting = null;
+  serverMeetingHistory = [];
+  serverNotifications = [];
+  pendingDelegates.length = 0;
+  seedDelegates.forEach(d => {
+    d.attendedMeetingsCount = 0;
+    d.votesCastCount = 0;
+    d.materialNotes = {};
+  });
+  appVersion += 1;
+  await dbSave('meeting', null);
+  await dbSave('meeting_history', []);
+  await dbSave('pending_delegates', []);
+  await dbSave('notifications', []);
   await dbSave('delegates', seedDelegates);
   broadcastState(false);
   res.json({ success: true });
@@ -883,17 +910,21 @@ app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
   }
 
   if (serverMeeting) {
-    serverMeeting.votingArchive = [];
-    serverMeeting.voting = {
-      active: false,
-      agendaItemId: '',
-      title: '',
-      votes: {}
-    };
-    serverMeeting.attendance = {};
-    serverMeeting.speakerQueue = [];
-    serverMeeting.currentSpeaker = null;
-    serverMeeting.agendaComments = [];
+    if (serverMeeting.status === 'дууссан') {
+      serverMeeting = null;
+    } else {
+      serverMeeting.votingArchive = [];
+      serverMeeting.voting = {
+        active: false,
+        agendaItemId: '',
+        title: '',
+        votes: {}
+      };
+      serverMeeting.attendance = {};
+      serverMeeting.speakerQueue = [];
+      serverMeeting.currentSpeaker = null;
+      serverMeeting.agendaComments = [];
+    }
     await dbSave('meeting', serverMeeting);
   }
   serverMeetingHistory = [];
@@ -904,10 +935,11 @@ app.post('/api/admin/clean-archives', async (req: Request, res: Response) => {
   seedDelegates.forEach(d => {
     d.attendedMeetingsCount = 0;
     d.votesCastCount = 0;
+    d.materialNotes = {};
   });
   await dbSave('delegates', seedDelegates);
 
-  broadcastState();
+  broadcastState(false);
   res.json({ success: true });
 });
 

@@ -114,6 +114,22 @@ export default function App() {
 
   const { delegates, meeting, notifications, pendingDelegates, meetingHistory = [] } = appState;
 
+  // Clean up cached personal notes when there is no active/ended meeting
+  useEffect(() => {
+    if (!meeting) {
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('material_notes_')) {
+            localStorage.removeItem(k);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [meeting]);
+
   // Global action dispatcher helpers
   const handleRoleChange = (role: 'admin' | 'projector' | 'delegate', delegateId: string | null) => {
     setCurrentRole(role);
