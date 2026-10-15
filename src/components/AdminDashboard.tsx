@@ -709,10 +709,10 @@ export default function AdminDashboard({
                 <button type="button" onClick={async () => {
                   if (!credentialsModal) return;
                   await onResetPassword(credentialsModal.delegate.id);
-                  setCredentialsModal({ ...credentialsModal, password: '123' });
-                  showToast('Нууц үг "123" болгож сэргээгдлээ.');
+                  setCredentialsModal({ ...credentialsModal, password: '1234' });
+                  showToast('Нууц үг "1234" болгож сэргээгдлээ.');
                 }} className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 cursor-pointer py-1">
-                  <RotateCcw size={11} /> "123" болгож сэргээх
+                  <RotateCcw size={11} /> "1234" болгож сэргээх
                 </button>
               </div>
             </div>
@@ -1515,7 +1515,7 @@ export default function AdminDashboard({
           {showAddForm && (
             <form onSubmit={handleAddDelegateSubmit} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 animate-fadeIn">
               <h5 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <UserPlus size={12} className="text-blue-600" /> Шинэ төлөөлөгч шууд нэмэх (анхны нууц үг: 123)
+                <UserPlus size={12} className="text-blue-600" /> Шинэ төлөөлөгч шууд нэмэх (анхны нууц үг: 1234)
               </h5>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
@@ -1621,7 +1621,7 @@ export default function AdminDashboard({
                 {allDelegates
                   .filter(d => {
                     const q = delegateSearch.toLowerCase();
-                    const matchQ = d.fullName.toLowerCase().includes(q) || d.username.toLowerCase().includes(q) || d.phone.includes(q);
+                    const matchQ = d.fullName.toLowerCase().includes(q) || d.username.toLowerCase().includes(q) || d.phone.includes(q) || (d.bio && d.bio.toLowerCase().includes(q));
                     const matchP = partyFilter === 'ALL' || d.party === partyFilter;
                     const matchD = districtFilter === 'ALL' || d.district === districtFilter;
                     return matchQ && matchP && matchD;

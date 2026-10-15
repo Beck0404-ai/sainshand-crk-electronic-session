@@ -362,14 +362,14 @@ app.post('/api/admin/speaker/clear', (_req: Request, res: Response) => {
 
 app.post('/api/admin/delegate/reset-password', (req: Request, res: Response) => {
   const d = seedDelegates.find(x => x.id === req.body.delegateId);
-  if (d) { (d as any).password = '123'; broadcastState(); return res.json({ success: true }); }
+  if (d) { (d as any).password = '1234'; broadcastState(); return res.json({ success: true }); }
   res.status(404).json({ error: 'Delegate not found' });
 });
 
 app.get('/api/admin/delegate/:id/credentials', (req: Request, res: Response) => {
   const d = seedDelegates.find(x => x.id === req.params.id);
   if (!d) return res.status(404).json({ error: 'Олдсонгүй' });
-  return res.json({ username: (d as any).username, password: (d as any).password || '123' });
+  return res.json({ username: (d as any).username, password: (d as any).password || '1234' });
 });
 
 app.post('/api/admin/delegate/change-password', (req: Request, res: Response) => {
