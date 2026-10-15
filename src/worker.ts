@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { AppState, CRKMeeting, Delegate, NotificationItem, VotingArchiveItem, PendingDelegate, ActiveSpeaker, ActiveVoting, AgendaComment } from './types.js';
-import { dbLoad, dbSave, dbClearAll, initDb } from './db.js';
+import { dbLoad, dbLoadAll, dbSave, dbClearAll, initDb, uploadMaterialFile } from './db.js';
 
 interface Fetcher {
   fetch(input: RequestInfo | URL | Request, init?: RequestInit): Promise<Response>;
@@ -68,13 +68,13 @@ let appVersion = 1;
 
 async function loadStateFromDB() {
   try {
-    const [dels, mtg, pend, notifs, hist] = await Promise.all([
-      dbLoad<any[]>('delegates'),
-      dbLoad<CRKMeeting | null>('meeting'),
-      dbLoad<any[]>('pending_delegates'),
-      dbLoad<NotificationItem[]>('notifications'),
-      dbLoad<CRKMeeting[]>('meeting_history'),
-    ]);
+    const stateMap = await dbLoadAll();
+    const dels = stateMap['delegates'];
+    const mtg = stateMap['meeting'];
+    const pend = stateMap['pending_delegates'];
+    const notifs = stateMap['notifications'];
+    const hist = stateMap['meeting_history'];
+
     if (dels?.length) { 
       seedDelegates.length = 0; 
       seedDelegates.push(...dels); 
@@ -89,7 +89,41 @@ async function loadStateFromDB() {
   }
 }
 
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function sanitizeMeetingMaterials(meeting: CRKMeeting | null) {
+  if (!meeting || !meeting.agenda) return;
+  for (const ag of meeting.agenda) {
+    if (!ag.materials) continue;
+    for (const mat of ag.materials) {
+      if (mat.fileUrl && mat.fileUrl.startsWith('data:')) {
+        try {
+          const match = mat.fileUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            const mime = match[1];
+            const bytes = base64ToUint8Array(match[2]);
+            const cleanUrl = await uploadMaterialFile(bytes, mat.title || 'material.pdf', mime);
+            if (cleanUrl) {
+              mat.fileUrl = cleanUrl;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to auto-upload base64 material in worker:', e);
+        }
+      }
+    }
+  }
+}
+
 async function saveStateToDB() {
+  await sanitizeMeetingMaterials(serverMeeting);
   await Promise.all([
     dbSave('delegates', seedDelegates),
     dbSave('meeting', serverMeeting),

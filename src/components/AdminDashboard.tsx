@@ -15,6 +15,7 @@ import {
 import PrintReportModal from './PrintReportModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import MeetingHistoryPanel from './MeetingHistoryPanel';
+import { uploadMaterialFile } from '../db.js';
 
 interface AdminDashboardProps {
   meeting: CRKMeeting | null;
@@ -401,23 +402,22 @@ export default function AdminDashboard({
 
     let uploadedFileUrl: string | undefined;
     if (matFile) {
-      if (matFile.size > 20 * 1024 * 1024) {
-        alert('Файл 20MB-аас хэтэрсэн байна. Файлын хэмжээг багасгаад дахин оролдоно уу.');
+      if (matFile.size > 25 * 1024 * 1024) {
+        alert('Файл 25MB-аас хэтэрсэн байна. Файлын хэмжээг багасгаад дахин оролдоно уу.');
         return;
       }
       setMatUploading(true);
       try {
-        uploadedFileUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Файл унших алдаа'));
-          reader.readAsDataURL(matFile);
-        });
+        const publicUrl = await uploadMaterialFile(matFile, matFile.name, matFile.type);
+        if (!publicUrl) {
+          throw new Error('Файлыг серверийн сан (Storage)-д хуулахад алдаа гарлаа. Та дахин оролдоно уу.');
+        }
+        uploadedFileUrl = publicUrl;
         const fileSizeKB = Math.round(matFile.size / 1024);
         if (fileSizeKB >= 1024) setMatSize(`${(fileSizeKB / 1024).toFixed(1)} MB`);
         else setMatSize(`${fileSizeKB} KB`);
       } catch (err: unknown) {
-        alert((err instanceof Error ? err.message : null) || 'Файл уншиж чадсангүй.');
+        alert((err instanceof Error ? err.message : null) || 'Файл хуулахад алдаа гарлаа.');
         setMatUploading(false);
         return;
       }

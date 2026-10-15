@@ -9,7 +9,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { AppState, CRKMeeting, Delegate, NotificationItem, ActiveSpeaker, ActiveVoting, SpeakerRequest, VotingArchiveItem, PendingDelegate, AgendaComment } from './src/types.js';
-import { dbLoad, dbSave, dbClearAll, getSupabaseClient } from './src/db.js';
+import { dbLoad, dbLoadAll, dbSave, dbClearAll, getSupabaseClient, uploadMaterialFile } from './src/db.js';
 
 const isCjs = typeof __filename !== 'undefined' && typeof __dirname !== 'undefined';
 const _filename = isCjs ? __filename : (import.meta && import.meta.url ? fileURLToPath(import.meta.url) : '');
@@ -18,7 +18,8 @@ const _dirname = isCjs ? __dirname : path.dirname(_filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '6mb' }));
+app.use(express.json({ limit: '50mb' }));
+
 
 
 // Preseeded list of 29 delegates of Sainshand Soum
@@ -70,13 +71,13 @@ let appVersion = 1;
 
 async function loadStateFromDB() {
   try {
-    const [dels, mtg, pend, notifs, hist] = await Promise.all([
-      dbLoad<any[]>('delegates'),
-      dbLoad<CRKMeeting | null>('meeting'),
-      dbLoad<any[]>('pending_delegates'),
-      dbLoad<NotificationItem[]>('notifications'),
-      dbLoad<CRKMeeting[]>('meeting_history'),
-    ]);
+    const stateMap = await dbLoadAll();
+    const dels = stateMap['delegates'];
+    const mtg = stateMap['meeting'];
+    const pend = stateMap['pending_delegates'];
+    const notifs = stateMap['notifications'];
+    const hist = stateMap['meeting_history'];
+
     if (dels?.length) { 
       seedDelegates.length = 0; 
       seedDelegates.push(...dels); 
@@ -95,7 +96,32 @@ async function loadStateFromDB() {
   }
 }
 
+async function sanitizeMeetingMaterials(meeting: CRKMeeting | null) {
+  if (!meeting || !meeting.agenda) return;
+  for (const ag of meeting.agenda) {
+    if (!ag.materials) continue;
+    for (const mat of ag.materials) {
+      if (mat.fileUrl && mat.fileUrl.startsWith('data:')) {
+        try {
+          const match = mat.fileUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            const mime = match[1];
+            const buffer = Buffer.from(match[2], 'base64');
+            const cleanUrl = await uploadMaterialFile(buffer, mat.title || 'material.pdf', mime);
+            if (cleanUrl) {
+              mat.fileUrl = cleanUrl;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to auto-upload base64 material:', e);
+        }
+      }
+    }
+  }
+}
+
 async function saveStateToDB() {
+  await sanitizeMeetingMaterials(serverMeeting);
   await Promise.all([
     dbSave('delegates', seedDelegates),
     dbSave('meeting', serverMeeting),

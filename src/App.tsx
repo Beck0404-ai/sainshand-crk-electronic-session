@@ -123,7 +123,15 @@ export default function App() {
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 p-6 font-sans">
         <img src="/logo.png" alt="ИТХ лого" className="h-20 w-20 object-contain mb-4 animate-pulse" />
         <h2 className="text-sm font-semibold tracking-tight text-slate-700">Сайншанд сумын ИТХ-ын систем</h2>
-        <p className="text-[10px] text-slate-400 mt-1 font-mono tracking-wider">СЕРВЕРТЭЙ ХОЛБОГДОЖ БАЙНА...</p>
+        <p className="text-[11px] text-slate-400 mt-1 font-mono tracking-wider">
+          {connectionStatus === 'disconnected' ? 'Сервертэй дахин холбогдож байна...' : 'СЕРВЕРТЭЙ ХОЛБОГДОЖ БАЙНА...'}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-sm"
+        >
+          Дахин ачааллах
+        </button>
       </div>
     );
   }
@@ -453,20 +461,35 @@ export default function App() {
   };
 
   const createMeeting = async (meetingData: { title: string; date: string; time: string; agenda: AgendaItem[] }) => {
-    await fetch('/api/admin/meeting/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(meetingData)
-    });
+    try {
+      const res = await fetch('/api/admin/meeting/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(meetingData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.state) {
+          setAppState(data.state);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error creating meeting:', e);
+    }
     await refreshState();
   };
 
   const addMaterial = async (agendaItemId: string, material: Partial<AgendaMaterial>) => {
-    await fetch('/api/admin/agenda/material/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agendaItemId, material })
-    });
+    try {
+      await fetch('/api/admin/agenda/material/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agendaItemId, material })
+      });
+    } catch (e) {
+      console.error('Error adding material:', e);
+    }
     await refreshState();
   };
 
