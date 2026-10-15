@@ -303,18 +303,20 @@ app.post('/api/admin/meeting/create', (req: Request, res: Response) => {
 });
 
 // Update an agenda item or add materials (Admin Tool)
-app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
+app.post('/api/admin/agenda/material/add', async (req: Request, res: Response) => {
   if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
   const { agendaItemId, material } = req.body;
   const agendaItem = serverMeeting.agenda.find(ag => ag.id === agendaItemId);
   if (agendaItem) {
+    if (!agendaItem.materials) agendaItem.materials = [];
     const newMaterial = {
-      id: `mat-${Date.now()}`,
-      title: material.title || 'Шинэ Танилцуулга Бусад.pdf',
+      id: material.id || `mat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      title: material.title || 'Шинэ файл.pdf',
       fileType: material.fileType || 'pdf',
       fileSize: material.fileSize || '1.2 MB',
       contentSummary: material.contentSummary || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах.',
-      fileUrl: material.fileUrl || undefined
+      fileUrl: material.fileUrl || undefined,
+      accessLevel: material.accessLevel || 'Зөвхөн Төлөөлөгчдөд'
     };
     agendaItem.materials.push(newMaterial);
     
@@ -326,10 +328,28 @@ app.post('/api/admin/agenda/material/add', (req: Request, res: Response) => {
       isRead: false
     });
     
+    appVersion += 1;
+    await saveStateToDB();
+    broadcastState();
+    res.json({ success: true, material: newMaterial });
+  } else {
+    res.status(404).json({ error: 'Agenda not found' });
+  }
+});
+
+// Delete a material from an agenda item (Admin Tool)
+app.post('/api/admin/agenda/material/delete', async (req: Request, res: Response) => {
+  if (!serverMeeting) return res.status(400).json({ error: 'Идэвхтэй хурал байхгүй байна.' });
+  const { agendaItemId, materialId } = req.body;
+  const agendaItem = serverMeeting.agenda.find(ag => ag.id === agendaItemId);
+  if (agendaItem && agendaItem.materials) {
+    agendaItem.materials = agendaItem.materials.filter(m => m.id !== materialId);
+    appVersion += 1;
+    await saveStateToDB();
     broadcastState();
     res.json({ success: true });
   } else {
-    res.status(404).json({ error: 'Agenda not found' });
+    res.status(404).json({ error: 'Material not found' });
   }
 });
 

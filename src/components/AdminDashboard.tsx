@@ -9,7 +9,8 @@ import {
   Shield, Users, Clipboard, PlusCircle, Play, Pause, SkipForward,
   FileCheck, Download, Edit2, Key, Info, CheckCircle, XCircle, ListPlus,
   Monitor, UserPlus, UserCheck, UserX, Eye, EyeOff, Lock, Trash2, RotateCcw,
-  Search, Filter, Printer, Clock, Bell, MessageSquare, BarChart3, History
+  Search, Filter, Printer, Clock, Bell, MessageSquare, BarChart3, History,
+  Paperclip, Upload, FileText
 } from 'lucide-react';
 import PrintReportModal from './PrintReportModal';
 import AnalyticsDashboard from './AnalyticsDashboard';
@@ -40,6 +41,7 @@ interface AdminDashboardProps {
   onAddDelegate: (data: { username: string; fullName: string; party: string; district: string; phone: string; email: string; bio?: string }) => Promise<void>;
   onCreateMeeting: (meetingData: { title: string; date: string; time: string; agenda: AgendaItem[] }) => Promise<void>;
   onAddMaterial: (agendaItemId: string, material: Partial<AgendaMaterial>) => Promise<void>;
+  onDeleteMaterial?: (agendaItemId: string, materialId: string) => Promise<void>;
   onSelectAgenda: (agendaItemId: string) => Promise<void>;
   onSetMeetingStatus: (status: 'товлогдсон' | 'идэвхтэй' | 'дууссан') => Promise<void>;
   onViewProjector: () => void;
@@ -74,6 +76,7 @@ export default function AdminDashboard({
   onAddDelegate,
   onCreateMeeting,
   onAddMaterial,
+  onDeleteMaterial,
   onSelectAgenda,
   onSetMeetingStatus,
   onViewProjector,
@@ -232,6 +235,8 @@ export default function AdminDashboard({
   const [matAccessLevel, setMatAccessLevel] = useState<'Нийтэд нээлттэй' | 'Зөвхөн Төлөөлөгчдөд' | 'Хязгаарлагдмал'>('Зөвхөн Төлөөлөгчдөд');
   const [matUploading, setMatUploading] = useState(false);
 
+  const availableAgendas = newAgendas.length > 0 ? newAgendas : (meeting?.agenda || []);
+
   // Voting setup inputs
   const [votingTitle, setVotingTitle] = useState('');
 
@@ -327,15 +332,64 @@ export default function AdminDashboard({
     }
   };
 
+  // Auto-select valid agenda for material loader
+  useEffect(() => {
+    if (newAgendas.length > 0) {
+      if (!selectedAgendaForMat || !newAgendas.some(ag => ag.id === selectedAgendaForMat)) {
+        setSelectedAgendaForMat(newAgendas[0].id);
+      }
+    } else if (meeting && meeting.agenda.length > 0) {
+      if (!selectedAgendaForMat || !meeting.agenda.some(ag => ag.id === selectedAgendaForMat)) {
+        setSelectedAgendaForMat(meeting.agenda[0].id);
+      }
+    }
+  }, [newAgendas, meeting]);
+
   const handleAddAgendaText = () => {
     if (tempAgendaInput.trim()) {
-      setNewAgendas([...newAgendas, { id: `pre-${Date.now()}`, title: tempAgendaInput.trim() }]);
+      const newId = `pre-${Date.now()}`;
+      setNewAgendas(prev => [...prev, { id: newId, title: tempAgendaInput.trim() }]);
       setTempAgendaInput('');
+      if (!selectedAgendaForMat) {
+        setSelectedAgendaForMat(newId);
+      }
     }
   };
 
   const handleRemoveAgendaIndex = (idx: number) => {
-    setNewAgendas(newAgendas.filter((_, i) => i !== idx));
+    const target = newAgendas[idx];
+    const filtered = newAgendas.filter((_, i) => i !== idx);
+    setNewAgendas(filtered);
+    if (target) {
+      setPendingMaterials(prev => {
+        const next = { ...prev };
+        delete next[target.id];
+        return next;
+      });
+      if (selectedAgendaForMat === target.id) {
+        setSelectedAgendaForMat(filtered[0]?.id || '');
+      }
+    }
+  };
+
+  const handleDeleteMaterial = async (agendaId: string, materialId: string) => {
+    const isPending = newAgendas.some(ag => ag.id === agendaId);
+    if (isPending) {
+      setPendingMaterials(prev => ({
+        ...prev,
+        [agendaId]: (prev[agendaId] || []).filter(m => m.id !== materialId)
+      }));
+      showToast('Материал хасагдлаа.');
+      return;
+    }
+    if (onDeleteMaterial) {
+      try {
+        await onDeleteMaterial(agendaId, materialId);
+        showToast('Материал амжилттай устгагдлаа.');
+      } catch {
+        alert('Материал устгахад алдаа гарлаа.');
+      }
+    }
   };
 
   const handleAddMaterialSubmit = async (e: React.FormEvent) => {
@@ -347,8 +401,8 @@ export default function AdminDashboard({
 
     let uploadedFileUrl: string | undefined;
     if (matFile) {
-      if (matFile.size > 2 * 1024 * 1024) {
-        alert('PDF файл 2MB-аас хэтэрсэн байна. Файлын хэмжээг багасгаад дахин оролдоно уу.');
+      if (matFile.size > 20 * 1024 * 1024) {
+        alert('Файл 20MB-аас хэтэрсэн байна. Файлын хэмжээг багасгаад дахин оролдоно уу.');
         return;
       }
       setMatUploading(true);
@@ -373,7 +427,7 @@ export default function AdminDashboard({
     const isPending = newAgendas.some(ag => ag.id === selectedAgendaForMat);
     if (isPending) {
       const mat: Partial<AgendaMaterial> = {
-        id: `mat-${Date.now()}`,
+        id: `mat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         title: matTitle,
         fileType: matType,
         fileSize: matSize,
@@ -385,7 +439,7 @@ export default function AdminDashboard({
         ...prev,
         [selectedAgendaForMat]: [...(prev[selectedAgendaForMat] || []), mat]
       }));
-      showToast('Материал хуралдаан үүсэхэд нэмэгдэнэ.');
+      showToast(`✓ "${matTitle}" амжилттай хавсаргагдлаа.`);
       setMatTitle(''); setMatContent(''); setMatFile(null);
       return;
     }
@@ -398,9 +452,9 @@ export default function AdminDashboard({
         fileUrl: uploadedFileUrl,
         accessLevel: matAccessLevel
       });
-      showToast('Файл амжилттай хавсаргагдлаа.');
+      showToast(`✓ "${matTitle}" амжилттай хавсаргагдлаа.`);
       setMatTitle(''); setMatContent(''); setMatFile(null);
-    } catch (e) {
+    } catch {
       alert('Материал хавсаргахад алдаа гарлаа.');
     }
   };
@@ -1728,26 +1782,120 @@ export default function AdminDashboard({
 
               {/* Dynamic agendas addition */}
               <div>
-                <label className="block font-bold text-slate-650 mb-1">Хэлэлцэх асуудлын жагсаалт ({newAgendas.length})</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block font-bold text-slate-700 text-xs">
+                    Хэлэлцэх асуудлын жагсаалт ({newAgendas.length})
+                  </label>
+                  <span className="text-[10px] text-blue-600 font-mono">
+                    Асуудал бүрт файл тусад нь хавсаргана
+                  </span>
+                </div>
                 
-                <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 mb-2">
-                  {newAgendas.map((ag, idx) => (
-                    <div key={ag.id} className="bg-slate-50 border border-slate-150 p-2 rounded-lg flex items-center justify-between gap-2">
-                      <span className="truncate flex-1 font-sans text-[11px] text-slate-700">
-                        {idx + 1}. {ag.title}
-                        {pendingMaterials[ag.id]?.length ? (
-                          <span className="ml-1.5 text-blue-500 font-mono text-[9px]">({pendingMaterials[ag.id].length} материал)</span>
-                        ) : null}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAgendaIndex(idx)}
-                        className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer font-mono text-[10px]"
-                      >
-                        [Устгах]
-                      </button>
+                <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 mb-2.5">
+                  {newAgendas.length === 0 ? (
+                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-slate-400 text-xs">
+                      Одоогоор асуудал нэмэгдээгүй байна. Доорх талбарт асуудлын нэрээ бичиж "Нэмэх" дарна уу.
                     </div>
-                  ))}
+                  ) : (
+                    newAgendas.map((ag, idx) => {
+                      const isSelected = selectedAgendaForMat === ag.id;
+                      const mats = pendingMaterials[ag.id] || [];
+                      return (
+                        <div
+                          key={ag.id}
+                          className={`border rounded-xl p-3 transition space-y-2 ${
+                            isSelected
+                              ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-100 shadow-sm'
+                              : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div
+                              onClick={() => setSelectedAgendaForMat(ag.id)}
+                              className="flex-1 cursor-pointer min-w-0"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`h-5 w-5 rounded-full text-[10px] font-bold font-mono flex items-center justify-center shrink-0 ${
+                                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+                                }`}>
+                                  {idx + 1}
+                                </span>
+                                <h5 className="font-bold text-xs text-slate-800 truncate">
+                                  {ag.title}
+                                </h5>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 ml-7">
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                                  mats.length > 0
+                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                    : 'bg-slate-200/80 text-slate-500'
+                                }`}>
+                                  📎 {mats.length} файл хавсаргасан
+                                </span>
+                                {isSelected && (
+                                  <span className="text-[10px] text-blue-600 font-bold font-mono">
+                                    ● Сонгогдсон
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAgendaForMat(ag.id)}
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                                }`}
+                                title="Энэ асуудалд материал оруулах"
+                              >
+                                <Paperclip size={11} /> Файл оруулах
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAgendaIndex(idx)}
+                                className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition cursor-pointer hover:bg-rose-50"
+                                title="Асуудлыг устгах"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* List of materials attached to THIS agenda item */}
+                          {mats.length > 0 && (
+                            <div className="ml-7 pt-1.5 border-t border-slate-200/60 space-y-1">
+                              {mats.map((mat) => (
+                                <div
+                                  key={mat.id}
+                                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 flex items-center justify-between gap-2 text-[11px]"
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <FileText size={12} className="text-blue-500 shrink-0" />
+                                    <span className="font-semibold text-slate-700 truncate">{mat.title}</span>
+                                    <span className="text-[9px] font-mono text-slate-400 shrink-0">({mat.fileSize})</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteMaterial(ag.id, mat.id!);
+                                    }}
+                                    className="text-slate-400 hover:text-rose-600 p-0.5 rounded cursor-pointer transition shrink-0"
+                                    title="Энэ материалыг хасах"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -1781,161 +1929,271 @@ export default function AdminDashboard({
             </form>
           </div>
 
-          {/* Agenda Material Loader */}
+          {/* Agenda Material Loader - Per Agenda Item */}
           <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-            <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
-              <ListPlus size={15} className="text-blue-600" /> ХУРАЛДААНЫ ТОХИРОХ МАТЕРИАЛ ХУУЛАХ
-            </h4>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <ListPlus size={15} className="text-blue-600" /> ХУРАЛДААНЫ ТОХИРОХ МАТЕРИАЛ ХУУЛАХ (ТУС ТУСД НЬ)
+              </h4>
+              {availableAgendas.length > 0 && (
+                <span className="text-[10px] font-mono text-slate-500 font-bold">
+                  Нийт {availableAgendas.length} асуудал
+                </span>
+              )}
+            </div>
 
-            {(meeting || newAgendas.length > 0) ? (
-              <form onSubmit={handleAddMaterialSubmit} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-650 mb-1">Холбогдох асуудал</label>
-                  <select
-                    value={selectedAgendaForMat}
-                    onChange={(e) => setSelectedAgendaForMat(e.target.value)}
-                    title="Холбогдох асуудал сонгох"
-                    className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none cursor-pointer"
-                    required
-                  >
-                    <option value="">-- Асуудал сонгох --</option>
-                    {newAgendas.length > 0
-                      ? newAgendas.map((ag, i) => (
-                          <option key={ag.id} value={ag.id}>{i + 1}. {ag.title.substring(0, 55)}</option>
-                        ))
-                      : meeting?.agenda.map(ag => (
-                          <option key={ag.id} value={ag.id}>{ag.title.substring(0, 60)}</option>
-                        ))
-                    }
-                  </select>
-                  {newAgendas.length === 0 && !meeting && (
-                    <p className="text-[10px] text-amber-600 mt-1">Зүүн талд хэлэлцэх асуудал нэмсний дараа автоматаар гарна</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
-                    <label className="block font-bold text-slate-655 mb-1">Файлын нэр (Монголоор)</label>
-                    <input
-                      type="text"
-                      value={matTitle}
-                      onChange={(e) => setMatTitle(e.target.value)}
-                      placeholder="Төсвийн зардлын судалгаа.pdf"
-                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-655 mb-1">Төрөл</label>
-                    <select
-                      value={matType}
-                      onChange={(e) => setMatType(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer text-slate-600"
-                    >
-                      <option value="pdf">PDF</option>
-                      <option value="docx">Word (docx)</option>
-                      <option value="xlsx">Excel (xlsx)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-655 mb-1">Стандарт хэмжээ</label>
-                    <input
-                      type="text"
-                      value={matSize}
-                      onChange={(e) => setMatSize(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-655 mb-1">Нууцын зэрэглэл</label>
-                    <select
-                      value={matAccessLevel}
-                      onChange={(e) => setMatAccessLevel(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer text-slate-700 font-medium"
-                    >
-                      <option value="Нийтэд нээлттэй">🌐 Нийтэд нээлттэй</option>
-                      <option value="Зөвхөн Төлөөлөгчдөд">🛡️ Зөвхөн Төлөөлөгчдөд</option>
-                      <option value="Хязгаарлагдмал">🔒 Хязгаарлагдмал</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-655 mb-1">PDF файл байршуулах</label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf,.docx,.xlsx"
-                      title="PDF, Word, Excel файл сонгох"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setMatFile(file);
-                        if (file && !matTitle) setMatTitle(file.name);
-                      }}
-                      className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs cursor-pointer file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
-                  {matFile && (
-                    <p className="text-[10px] text-emerald-600 mt-1 font-semibold">
-                      ✓ {matFile.name} ({Math.round(matFile.size / 1024)} KB)
-                    </p>
-                  )}
-                  <p className="text-[10px] text-slate-400 mt-1">PDF, Word, Excel — дээд тал нь 20MB</p>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-655 mb-1">Товч агуулга хураангуй <span className="text-slate-400 font-normal">(URL байхгүй үед харуулна)</span></label>
-                  <textarea
-                    value={matContent}
-                    onChange={(e) => setMatContent(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none resize-none"
-                    placeholder="Энэхүү сургалтын төсөл нь Сайншанд багийн залуусыг бэлтгэхэд зориулсан бодит төсөвт төлөвлөгөө юм ..."
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={matUploading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2.5 px-3 rounded-lg text-xs transition cursor-pointer shadow-sm"
-                >
-                  {matUploading ? '⏳ Байршуулж байна...' : 'Материал системд байршуулах'}
-                </button>
-              </form>
+            {availableAgendas.length === 0 ? (
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-400 space-y-2">
+                <Paperclip size={28} className="mx-auto text-slate-300" />
+                <p className="text-xs font-semibold text-slate-500">Эхлээд зүүн талд хэлэлцэх асуудал нэмнэ үү.</p>
+                <p className="text-[10px] text-slate-400">Асуудал нэмэгдсэн даруйд энд асуудал тус бүрээр нь файл хавсаргах боломжтой болно.</p>
+              </div>
             ) : (
-              <p className="text-slate-400 italic text-center py-6">Эхлээд идэвхтэй хурал үүсгэнэ үү.</p>
-            )}
+              <div className="space-y-4 text-xs">
+                {/* 1. Per-Agenda Pills Selector */}
+                <div>
+                  <label className="block font-bold text-slate-700 text-xs mb-1.5">
+                    1. Материал хавсаргах асуудлаа сонгоно уу:
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto p-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    {availableAgendas.map((ag, idx) => {
+                      const isSel = selectedAgendaForMat === ag.id;
+                      const mats = newAgendas.length > 0
+                        ? (pendingMaterials[ag.id] || [])
+                        : (meeting?.agenda.find(x => x.id === ag.id)?.materials || []);
+                      return (
+                        <button
+                          type="button"
+                          key={ag.id}
+                          onClick={() => setSelectedAgendaForMat(ag.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer border ${
+                            isSel
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="truncate max-w-[170px] text-left">
+                            {idx + 1}. {ag.title.replace(/^\d+\.\s*/, '')}
+                          </span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold shrink-0 ${
+                            isSel
+                              ? 'bg-white/20 text-white'
+                              : (mats.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500')
+                          }`}>
+                            {mats.length}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* Uploaded materials list */}
-            {meeting && meeting.agenda.some(ag => ag.materials.length > 0) && (
-              <div className="border-t border-slate-100 pt-4 mt-2 space-y-3">
-                <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Байршуулсан материалууд</h5>
-                {meeting.agenda.map(ag => ag.materials.length > 0 && (
-                  <div key={ag.id}>
-                    <p className="text-[10px] font-semibold text-slate-600 mb-1.5 truncate">{ag.title}</p>
-                    <div className="space-y-1.5">
-                      {ag.materials.map(mat => (
-                        <div key={mat.id} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                          <FileCheck size={13} className="text-blue-500 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold text-slate-700 truncate">{mat.title}</p>
-                            <p className="text-[9px] text-slate-400 font-mono">{mat.fileType.toUpperCase()} · {mat.fileSize}</p>
-                          </div>
-                          {mat.fileUrl && (
-                            <a href={mat.fileUrl} target="_blank" rel="noreferrer" title="Татаж авах"
-                              className="shrink-0 text-[10px] text-blue-600 font-bold hover:underline">
-                              <Download size={12} />
-                            </a>
+                {/* 2. Active Target Agenda Info Box */}
+                {(() => {
+                  const currentAg = availableAgendas.find(a => a.id === selectedAgendaForMat) || availableAgendas[0];
+                  if (!currentAg) return null;
+                  const currentMats = newAgendas.length > 0
+                    ? (pendingMaterials[currentAg.id] || [])
+                    : (meeting?.agenda.find(x => x.id === currentAg.id)?.materials || []);
+                  const currentIdx = availableAgendas.findIndex(a => a.id === currentAg.id);
+
+                  return (
+                    <div className="space-y-3.5">
+                      {/* Active target banner */}
+                      <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/80 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="text-[9px] uppercase font-mono font-bold text-blue-600 tracking-wider block">
+                            🎯 Одоо материал хавсаргаж буй асуудал
+                          </span>
+                          <h5 className="font-extrabold text-xs text-slate-900 truncate mt-0.5">
+                            {currentIdx + 1}. {currentAg.title.replace(/^\d+\.\s*/, '')}
+                          </h5>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold bg-white text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg shrink-0 shadow-2xs">
+                          📎 {currentMats.length} файлтай
+                        </span>
+                      </div>
+
+                      {/* Attached materials list for this selected agenda */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase text-slate-500 font-mono tracking-wider">
+                            Хавсаргасан файлууд ({currentMats.length})
+                          </span>
+                          {currentMats.length > 0 && (
+                            <span className="text-[10px] text-emerald-600 font-medium font-mono">✓ Бэлэн болсон</span>
                           )}
                         </div>
-                      ))}
+
+                        {currentMats.length === 0 ? (
+                          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-3 text-center text-slate-400 text-[11px]">
+                            Энэ асуудалд хараахан файл ороогүй байна. Доорх формыг ашиглан файл хуулна уу.
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                            {currentMats.map((mat) => (
+                              <div
+                                key={mat.id}
+                                className="bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-between gap-2 shadow-2xs"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <FileText size={15} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-xs text-slate-800 truncate">{mat.title}</p>
+                                    <p className="text-[10px] text-slate-400 font-mono">
+                                      {mat.fileType?.toUpperCase()} · {mat.fileSize} · <span className="text-slate-600 font-medium">{mat.accessLevel}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {mat.fileUrl && (
+                                    <a
+                                      href={mat.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="Татаж авах / Үзэх"
+                                      className="text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-50 transition"
+                                    >
+                                      <Download size={13} />
+                                    </a>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMaterial(currentAg.id, mat.id!)}
+                                    className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                    title="Энэ файлыг устгах"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* File upload form for this specific agenda */}
+                      <form onSubmit={handleAddMaterialSubmit} className="space-y-3 pt-3 border-t border-slate-150">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-700">
+                            2. Шинэ файл хавсаргах:
+                          </span>
+                          <span className="text-[10px] text-blue-600 font-mono">
+                            PDF, Word, Excel (20MB хүртэл)
+                          </span>
+                        </div>
+
+                        {/* File input */}
+                        <div>
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.xlsx"
+                            title="Файл сонгох"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setMatFile(file);
+                              if (file) {
+                                setMatTitle(file.name);
+                                const ext = file.name.split('.').pop()?.toLowerCase();
+                                if (ext === 'docx') setMatType('docx');
+                                else if (ext === 'xlsx') setMatType('xlsx');
+                                else setMatType('pdf');
+
+                                const sizeKB = Math.round(file.size / 1024);
+                                if (sizeKB >= 1024) setMatSize(`${(sizeKB / 1024).toFixed(1)} MB`);
+                                else setMatSize(`${sizeKB} KB`);
+                              }
+                            }}
+                            className="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 outline-none focus:outline-blue-500/50 text-xs cursor-pointer file:mr-3 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                          />
+                          {matFile && (
+                            <p className="text-[10px] text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+                              ✓ Сонгогдсон: {matFile.name} ({matSize})
+                            </p>
+                          )}
+                        </div>
+
+                        {/* File Name & Access level */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <div className="sm:col-span-2">
+                            <label className="block font-bold text-slate-655 mb-1 text-[11px]">Файлын нэр (Монголоор)</label>
+                            <input
+                              type="text"
+                              value={matTitle}
+                              onChange={(e) => setMatTitle(e.target.value)}
+                              placeholder="Файлын нэр оруулна уу..."
+                              className="w-full px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 text-xs font-semibold"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-655 mb-1 text-[11px]">Нууцын зэрэглэл</label>
+                            <select
+                              value={matAccessLevel}
+                              onChange={(e) => setMatAccessLevel(e.target.value as any)}
+                              className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer text-slate-700 text-xs font-medium"
+                            >
+                              <option value="Зөвхөн Төлөөлөгчдөд">🛡️ Төлөөлөгчдөд</option>
+                              <option value="Нийтэд нээлттэй">🌐 Нээлттэй</option>
+                              <option value="Хязгаарлагдмал">🔒 Хязгаарлагдмал</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Optional Content Summary */}
+                        <div>
+                          <label className="block font-bold text-slate-655 mb-1 text-[11px]">
+                            Товч агуулга хураангуй <span className="text-slate-400 font-normal">(заавал биш)</span>
+                          </label>
+                          <textarea
+                            value={matContent}
+                            onChange={(e) => setMatContent(e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 outline-none resize-none text-xs"
+                            placeholder="Энэхүү материалын товч тайлбар..."
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="submit"
+                            disabled={matUploading}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2.5 px-3 rounded-xl text-xs transition cursor-pointer shadow-sm flex items-center justify-center gap-2"
+                          >
+                            {matUploading ? '⏳ Байршуулж байна...' : (
+                              <>
+                                <Upload size={14} />
+                                <span className="truncate">
+                                  [{currentIdx + 1}-р асуудал]-д файл хавсаргах
+                                </span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Next agenda shortcut */}
+                          {currentIdx < availableAgendas.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedAgendaForMat(availableAgendas[currentIdx + 1].id);
+                                setMatTitle('');
+                                setMatContent('');
+                                setMatFile(null);
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0 border border-slate-200 flex items-center gap-1"
+                              title="Дараагийн асуудал руу шилжих"
+                            >
+                              <span>Дараах ({currentIdx + 2})</span>
+                              <SkipForward size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </form>
                     </div>
-                  </div>
-                ))}
+                  );
+                })()}
               </div>
             )}
           </div>

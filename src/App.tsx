@@ -470,6 +470,15 @@ export default function App() {
     await refreshState();
   };
 
+  const deleteMaterial = async (agendaItemId: string, materialId: string) => {
+    await fetch('/api/admin/agenda/material/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agendaItemId, materialId })
+    });
+    await refreshState();
+  };
+
   const selectAgenda = async (agendaItemId: string) => {
     await fetch('/api/admin/agenda/select', {
       method: 'POST',
@@ -798,6 +807,7 @@ export default function App() {
             onAddDelegate={addDelegateDirectly}
             onCreateMeeting={createMeeting}
             onAddMaterial={addMaterial}
+            onDeleteMaterial={deleteMaterial}
             onSelectAgenda={selectAgenda}
             onSetMeetingStatus={setMeetingStatus}
             onViewProjector={() => handleRoleChange('projector', null)}

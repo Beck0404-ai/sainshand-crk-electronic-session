@@ -366,6 +366,55 @@ app.post('/api/admin/meeting/create', async (c) => {
   return c.json({ success: true, state: getFullState() });
 });
 
+// Update an agenda item or add materials (Admin Tool)
+app.post('/api/admin/agenda/material/add', async (c) => {
+  if (!serverMeeting) return c.json({ error: 'Идэвхтэй хурал байхгүй байна.' }, 400);
+  const { agendaItemId, material } = await c.req.json();
+  const agendaItem = serverMeeting.agenda.find(ag => ag.id === agendaItemId);
+  if (agendaItem) {
+    if (!agendaItem.materials) agendaItem.materials = [];
+    const newMaterial = {
+      id: material.id || `mat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      title: material.title || 'Шинэ файл.pdf',
+      fileType: material.fileType || 'pdf',
+      fileSize: material.fileSize || '1.2 MB',
+      contentSummary: material.contentSummary || 'Орон нутгийн танилцуулга материал сумын төлөөлөгчдөд танилцуулах.',
+      fileUrl: material.fileUrl || undefined,
+      accessLevel: material.accessLevel || 'Зөвхөн Төлөөлөгчдөд'
+    };
+    agendaItem.materials.push(newMaterial);
+    
+    serverNotifications.push({
+      id: `notif-${Date.now()}`,
+      title: 'Шинэ файл оруулав',
+      message: `${agendaItem.title} хэлэлцэх асуудалд "${newMaterial.title}" нэртэй хуралдааны материал нэмэгдлээ.`,
+      timestamp: Date.now(),
+      isRead: false
+    });
+    
+    appVersion += 1;
+    await saveStateToDB();
+    return c.json({ success: true, material: newMaterial });
+  } else {
+    return c.json({ error: 'Асуудал олдсонгүй' }, 404);
+  }
+});
+
+// Delete a material from an agenda item (Admin Tool)
+app.post('/api/admin/agenda/material/delete', async (c) => {
+  if (!serverMeeting) return c.json({ error: 'Идэвхтэй хурал байхгүй байна.' }, 400);
+  const { agendaItemId, materialId } = await c.req.json();
+  const agendaItem = serverMeeting.agenda.find(ag => ag.id === agendaItemId);
+  if (agendaItem && agendaItem.materials) {
+    agendaItem.materials = agendaItem.materials.filter(m => m.id !== materialId);
+    appVersion += 1;
+    await saveStateToDB();
+    return c.json({ success: true });
+  } else {
+    return c.json({ error: 'Материал эсвэл асуудал олдсонгүй' }, 404);
+  }
+});
+
 app.post('/api/admin/attendance/toggle', async (c) => {
   if (!serverMeeting) return c.json({ error: 'Идэвхтэй хурал байхгүй байна.' }, 400);
   const { open } = await c.req.json();
