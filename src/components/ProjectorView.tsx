@@ -582,18 +582,24 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     );
                   }
 
-                  // Seamless slow rolling loop
-                  const displayList = attendedDelegates.length === 1
-                    ? [...attendedDelegates, ...attendedDelegates, ...attendedDelegates, ...attendedDelegates]
-                    : [...attendedDelegates, ...attendedDelegates];
+                  // Нэр давхардахгүй байх: 4 ба түүнээс цөөн төлөөлөгч байвал шууд нэг нэгээр тогтвортой харуулна
+                  // 4-өөс олон төлөөлөгч танхимд ирсэн үед л дэлгэцэнд багтаахын тулд маш удаанаар гүйнэ
+                  const isLongList = attendedDelegates.length > 4;
+                  const displayList = isLongList
+                    ? [...attendedDelegates, ...attendedDelegates]
+                    : attendedDelegates;
 
                   return (
                     <div className="relative flex-1 min-h-[340px] max-h-[500px] overflow-hidden rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner">
-                      {/* Soft top and bottom gradient fades */}
-                      <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-[#0b162c] to-transparent z-10 pointer-events-none" />
-                      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                      {isLongList && (
+                        <>
+                          {/* Soft top and bottom gradient fades */}
+                          <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                        </>
+                      )}
 
-                      <div className="animate-marquee-slow-vertical space-y-2">
+                      <div className={isLongList ? "animate-marquee-slow-vertical space-y-2" : "space-y-2"}>
                         {displayList.map((d, idx) => {
                           const didVote = isVotingActive ? !!votes[d.id] : false;
                           const officialIndex = delegates.findIndex(x => x.id === d.id);
@@ -647,7 +653,9 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     <div className="h-2.5 w-2.5 bg-emerald-500/30 border border-emerald-500/40 rounded-sm"></div>
                     <span className="text-emerald-300">Ирц бүртгүүлсэн төлөөлөгчид</span>
                   </div>
-                  <span className="text-blue-400/80 text-[8px]">Удаанаар дээшээ гүйнэ</span>
+                  <span className="text-blue-400/80 text-[8px] font-mono">
+                    {presentCount > 4 ? 'Удаанаар дээшээ гүйнэ' : 'Танхимын ирц'}
+                  </span>
                 </div>
               </div>
 
