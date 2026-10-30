@@ -136,7 +136,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
           0% { transform: translateX(0%); }
           100% { transform: translateX(-33.333%); }
         }
-        @keyframes marqueeVertical {
+        @keyframes marqueeVerticalSlow {
           0% { transform: translateY(0%); }
           100% { transform: translateY(-50%); }
         }
@@ -145,12 +145,12 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
           width: max-content;
           animation: marquee 24s linear infinite;
         }
-        .animate-marquee-vertical {
+        .animate-marquee-slow-vertical {
           display: flex;
           flex-direction: column;
-          animation: marqueeVertical 20s linear infinite;
+          animation: marqueeVerticalSlow 45s linear infinite;
         }
-        .animate-marquee-vertical:hover {
+        .animate-marquee-slow-vertical:hover {
           animation-play-state: paused;
         }
       `}} />
@@ -564,77 +564,90 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                 <div className="text-[9px] text-blue-400 font-mono uppercase tracking-widest mt-0.5 font-bold">БҮРТГЭГДСЭН ИРЭЛТ ({attendancePercentage}%)</div>
               </div>
 
-              {/* STABLE DELEGATES LIST (Тогтвортой, цэвэрхэн харагдах 29 төлөөлөгчийн жагсаалт) */}
+              {/* SLOW SCROLLING ATTENDED DELEGATES LIST (Зөвхөн ирсэн төлөөлөгчид маш удаанаар гүйнэ) */}
               <div className="pt-1 flex-1 flex flex-col min-h-[360px]">
                 <div className="flex items-center justify-between text-[9px] text-blue-400 uppercase tracking-widest mb-1.5 font-mono font-bold">
-                  <span>📜 ТӨЛӨӨЛӨГЧДИЙН ЖАГСААЛТ</span>
-                  <span>({delegates.length})</span>
+                  <span>📜 ИРСЭН ТӨЛӨӨЛӨГЧИД</span>
+                  <span className="text-emerald-400 font-mono">{presentCount} / {totalCount}</span>
                 </div>
 
-                <div className="relative flex-1 min-h-[340px] max-h-[500px] overflow-y-auto rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner space-y-1.5">
-                  {delegates.map((d, idx) => {
-                    const isPresent = meeting ? !!meeting.attendance[d.id] : false;
-                    const didVote = isVotingActive ? !!votes[d.id] : false;
-                    const seatNo = String(idx + 1).padStart(2, '0');
-
-                    let voteBadgeText = null;
-                    if (isVotingActive && didVote) {
-                      const choice = votes[d.id]?.choice;
-                      if (choice === 'Зөвшөөрсөн' || choice === 'Батлах') voteBadgeText = '👍 Зөвшөөрсөн';
-                      else if (choice === 'Татгалзсан' || choice === 'Татгалзах') voteBadgeText = '👎 Татгалзсан';
-                      else if (choice === 'Түтгэлзсэн' || choice === 'Санал гаргах') voteBadgeText = '✋ Түтгэлзсэн';
-                    }
-
+                {(() => {
+                  const attendedDelegates = delegates.filter(d => meeting ? !!meeting.attendance[d.id] : false);
+                  if (attendedDelegates.length === 0) {
                     return (
-                      <div
-                        key={d.id}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between border transition-all duration-300 ${
-                          isPresent
-                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm'
-                            : 'bg-blue-950/40 border-blue-900/30 text-slate-400 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className={`h-5 w-5 rounded-md font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0 ${
-                            isPresent ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-blue-950 text-slate-500 border border-blue-900/40'
-                          }`}>
-                            {seatNo}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="font-bold truncate text-xs leading-snug">{d.fullName}</p>
-                            <p className="text-[9px] font-mono opacity-70 truncate">{d.party} • {d.district}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                            isPresent
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                              : 'bg-blue-950 text-slate-400 border-blue-900/40'
-                          }`}>
-                            {isPresent ? 'Ирсэн' : 'Ирээгүй'}
-                          </span>
-                          {voteBadgeText && (
-                            <span className="text-[8px] font-mono text-amber-300 font-bold">{voteBadgeText}</span>
-                          )}
-                        </div>
+                      <div className="relative flex-1 min-h-[340px] max-h-[500px] flex flex-col items-center justify-center text-center py-20 text-blue-300/40 rounded-2xl bg-blue-950/70 border border-blue-900/60 p-4 space-y-2 shadow-inner">
+                        <Users size={32} />
+                        <p className="text-xs font-sans">Танхимд одоогоор ирц бүртгүүлсэн төлөөлөгч байхгүй байна.</p>
                       </div>
                     );
-                  })}
-                </div>
+                  }
+
+                  // Seamless slow rolling loop
+                  const displayList = attendedDelegates.length === 1
+                    ? [...attendedDelegates, ...attendedDelegates, ...attendedDelegates, ...attendedDelegates]
+                    : [...attendedDelegates, ...attendedDelegates];
+
+                  return (
+                    <div className="relative flex-1 min-h-[340px] max-h-[500px] overflow-hidden rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner">
+                      {/* Soft top and bottom gradient fades */}
+                      <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#0b162c] to-transparent z-10 pointer-events-none" />
+
+                      <div className="animate-marquee-slow-vertical space-y-2">
+                        {displayList.map((d, idx) => {
+                          const didVote = isVotingActive ? !!votes[d.id] : false;
+                          const officialIndex = delegates.findIndex(x => x.id === d.id);
+                          const seatNo = String(officialIndex >= 0 ? officialIndex + 1 : idx + 1).padStart(2, '0');
+
+                          let voteBadgeText = null;
+                          if (isVotingActive && didVote) {
+                            const choice = votes[d.id]?.choice;
+                            if (choice === 'Зөвшөөрсөн' || choice === 'Батлах') voteBadgeText = '👍 Зөвшөөрсөн';
+                            else if (choice === 'Татгалзсан' || choice === 'Татгалзах') voteBadgeText = '👎 Татгалзсан';
+                            else if (choice === 'Түтгэлзсэн' || choice === 'Санал гаргах') voteBadgeText = '✋ Түтгэлзсэн';
+                          }
+
+                          return (
+                            <div
+                              key={`${d.id}-${idx}`}
+                              className="px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between border transition-all duration-300 bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="h-6 w-6 rounded-lg font-mono text-[10px] font-bold flex items-center justify-center flex-shrink-0 bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                  {seatNo}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="font-bold truncate text-xs leading-snug">{d.fullName}</p>
+                                  <p className="text-[10px] font-mono opacity-80 truncate text-emerald-300/80">{d.party} • {d.district}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                <span className="text-[9px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40 flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  Ирсэн
+                                </span>
+                                {voteBadgeText && (
+                                  <span className="text-[8px] font-mono text-amber-300 font-bold">{voteBadgeText}</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* SEATING MAP LEGEND */}
               <div className="pt-3 border-t border-blue-900/40 space-y-1.5 text-[9px] text-blue-300/70 font-mono flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-sm"></div>
-                    <span>Ирц бүртгүүлсэн (Ирсэн)</span>
+                    <div className="h-2.5 w-2.5 bg-emerald-500/30 border border-emerald-500/40 rounded-sm"></div>
+                    <span className="text-emerald-300">Ирц бүртгүүлсэн төлөөлөгчид</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 bg-blue-950/40 border border-blue-900/20 rounded-sm"></div>
-                    <span>Ороогүй (Ирээгүй)</span>
-                  </div>
+                  <span className="text-blue-400/80 text-[8px]">Удаанаар дээшээ гүйнэ</span>
                 </div>
               </div>
 
