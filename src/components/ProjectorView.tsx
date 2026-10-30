@@ -6,7 +6,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Delegate, CRKMeeting } from '../types.js';
 import { User, Users, Clock, Vote, AlertCircle, LayoutDashboard } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { playTimerEndSound, playVoteStartSound } from '../utils/soundUtils';
 
 interface ProjectorViewProps {
@@ -237,7 +236,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
             
             <div className="space-y-4">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2">
-                <Clock className="animate-pulse text-blue-400" size={13} /> ОДОО ҮГ ХЭЛЖ БУЙ ТӨЛӨӨЛӨГЧ
+                <Clock className="text-blue-400" size={13} /> ОДОО ҮГ ХЭЛЖ БУЙ ТӨЛӨӨЛӨГЧ
               </h3>
 
               {activeSpeaker && activeSpeakerDelegate ? (
@@ -322,7 +321,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
             
             <div className="space-y-4">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center gap-1.5 border-b border-blue-900/40 pb-2 mb-2">
-                <Vote size={13} className="animate-pulse text-blue-400" /> САНАЛ ХУРААЛТЫН ШУУД НЭГТГЭЛ
+                <Vote size={13} className="text-blue-400" /> САНАЛ ХУРААЛТЫН ШУУД НЭГТГЭЛ
               </h3>
 
               {isVotingActive ? (
@@ -438,14 +437,8 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                   const passed = lastYes.length > lastNo.length;
 
                   return (
-                    <AnimatePresence>
-                      <motion.div
-                        key={last.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="space-y-4"
-                      >
-                        {/* Result banner */}
+                    <div className="space-y-4">
+                      {/* Result banner */}
                         <div className={`rounded-2xl p-4 border text-center ${
                           passed
                             ? 'bg-emerald-500/10 border-emerald-500/40'
@@ -524,13 +517,12 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                             Нийт {meeting.votingArchive.length} санал хураалт архивлагдсан
                           </div>
                         )}
-                      </motion.div>
-                    </AnimatePresence>
+                      </div>
                   );
                 })()
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-blue-300/40 space-y-3">
-                  <AlertCircle size={38} className="animate-pulse" />
+                  <AlertCircle size={38} />
                   <div>
                     <h4 className="font-bold text-blue-200 text-xs">Идэвхтэй санал хураалт явагдаагүй байна</h4>
                     <p className="text-[9px] text-blue-400 mt-1 uppercase tracking-widest font-mono">Шийдвэрлэх асуудлаар админы тохиргоог хүлээнэ үү</p>
