@@ -191,65 +191,82 @@ export default function DelegateDashboard({
     }
   });
 
-  const [noteSaveStatus, setNoteSaveStatus] = useState<Record<string, 'saved' | 'saving'>>({});
-  const saveTimersRef = useRef<Record<string, any>>({});
+  const [savedNotes, setSavedNotes] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`material_notes_${delegate.id}`);
+      const localNotes = saved ? JSON.parse(saved) : {};
+      return { ...localNotes, ...(delegate.materialNotes || {}) };
+    } catch {
+      return delegate.materialNotes || {};
+    }
+  });
+
+  const [noteSaveStatus, setNoteSaveStatus] = useState<Record<string, 'idle' | 'saved' | 'saving'>>({});
 
   // Sync if delegate.materialNotes updates from backend or if meeting is cleared
   useEffect(() => {
     if (!meeting) {
       setMaterialNotes({});
+      setSavedNotes({});
       try {
         localStorage.removeItem(`material_notes_${delegate.id}`);
       } catch {}
       return;
     }
     if (delegate.materialNotes) {
-      setMaterialNotes(prev => ({
+      setSavedNotes(prev => ({
         ...prev,
         ...delegate.materialNotes
+      }));
+      setMaterialNotes(prev => ({
+        ...delegate.materialNotes,
+        ...prev
       }));
     }
   }, [delegate.materialNotes, meeting]);
 
-  const handleSaveMaterialNote = (materialId: string, text: string) => {
-    const updated = { ...materialNotes, [materialId]: text };
-    setMaterialNotes(updated);
+  const handleSaveMaterialNote = async (materialId: string, customText?: string) => {
+    const textToSave = customText !== undefined ? customText : (materialNotes[materialId] || '');
+    setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saving' }));
+
+    // 1. Update localStorage
     try {
-      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updated));
+      const updatedSaved = { ...savedNotes, [materialId]: textToSave };
+      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updatedSaved));
+      setSavedNotes(updatedSaved);
     } catch (e) {
       console.warn('Failed to save note to localStorage:', e);
     }
 
-    setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saving' }));
-
-    if (saveTimersRef.current[materialId]) {
-      clearTimeout(saveTimersRef.current[materialId]);
-    }
-
-    saveTimersRef.current[materialId] = setTimeout(async () => {
-      try {
-        if (onSaveMaterialNote) {
-          await onSaveMaterialNote(materialId, text);
-        } else {
-          await fetch('/api/delegate/note/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delegateId: delegate.id, materialId, text })
-          });
-        }
-        setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saved' }));
-      } catch (err) {
-        console.error('Failed to sync note to profile:', err);
+    // 2. Persist to DB / Backend
+    try {
+      if (onSaveMaterialNote) {
+        await onSaveMaterialNote(materialId, textToSave);
+      } else {
+        await fetch('/api/delegate/note/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delegateId: delegate.id, materialId, text: textToSave })
+        });
       }
-    }, 600);
+      setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'saved' }));
+    } catch (err) {
+      console.error('Failed to sync note to profile:', err);
+      setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'idle' }));
+    }
   };
 
   const handleDeleteMaterialNote = async (materialId: string) => {
     const updated = { ...materialNotes };
     delete updated[materialId];
     setMaterialNotes(updated);
+
+    const updatedSaved = { ...savedNotes };
+    delete updatedSaved[materialId];
+    setSavedNotes(updatedSaved);
+
     try {
-      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updated));
+      localStorage.setItem(`material_notes_${delegate.id}`, JSON.stringify(updatedSaved));
     } catch (e) {
       console.warn('Failed to save note to localStorage:', e);
     }
@@ -263,7 +280,10 @@ export default function DelegateDashboard({
           body: JSON.stringify({ delegateId: delegate.id, materialId })
         });
       }
-      showProfileToastMsg('✓ Тэмдэглэлийг амжилттай устгалаа.');
+      setNoteSaveStatus(prev => ({ ...prev, [materialId]: 'idle' }));
+      if (typeof showProfileToastMsg === 'function') {
+        showProfileToastMsg('✓ Тэмдэглэлийг амжилттай устгалаа.');
+      }
     } catch (err) {
       console.error('Failed to delete note from profile:', err);
     }
@@ -1046,34 +1066,61 @@ export default function DelegateDashboard({
                                              <span className="flex items-center gap-1.5">
                                                <FileEdit size={13} className="text-amber-600" /> Миний хувийн тэмдэглэл (Sticky Note)
                                              </span>
-                                             <div className="flex items-center gap-2">
-                                               {noteSaveStatus[mat.id] === 'saving' ? (
-                                                 <span className="text-[9px] text-amber-700 font-mono flex items-center gap-1 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300">
-                                                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
-                                                   Профайлд хадгалж байна...
-                                                 </span>
-                                               ) : materialNotes[mat.id]?.trim() ? (
-                                                 <span className="text-[9px] text-emerald-800 font-mono font-bold flex items-center gap-1 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300">
-                                                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
-                                                   ✓ Профайлд хадгалагдсан
-                                                 </span>
-                                               ) : (
-                                                 <span className="text-[9px] text-amber-700/80 font-mono">
-                                                   ☁️ Профайлд хадгалагдана
-                                                 </span>
-                                               )}
-                                               <span className="text-[9px] text-amber-800 font-mono flex items-center gap-0.5">
-                                                 <Lock size={10} /> Зөвхөн танд харагдана
-                                               </span>
-                                             </div>
+                                             <span className="text-[9px] text-amber-800 font-mono flex items-center gap-0.5">
+                                               <Lock size={10} /> Зөвхөн танд харагдана
+                                             </span>
                                            </div>
                                            <textarea
                                              value={materialNotes[mat.id] || ''}
-                                             onChange={(e) => handleSaveMaterialNote(mat.id, e.target.value)}
+                                             onChange={(e) => {
+                                               const val = e.target.value;
+                                               setMaterialNotes(prev => ({ ...prev, [mat.id]: val }));
+                                               if (noteSaveStatus[mat.id] === 'saved') {
+                                                 setNoteSaveStatus(prev => ({ ...prev, [mat.id]: 'idle' }));
+                                               }
+                                             }}
                                              rows={2}
                                              placeholder="Асуулт, санал эсвэл үг хэлэхэд ашиглах тэмдэглэлээ энд бичнэ үү..."
-                                             className="w-full text-xs p-2.5 bg-white/80 border border-amber-300 rounded-xl text-amber-950 outline-none focus:border-amber-500 font-sans resize-none shadow-inner"
+                                             className="w-full text-xs p-2.5 bg-white/90 border border-amber-300 rounded-xl text-amber-950 outline-none focus:border-amber-500 font-sans resize-none shadow-inner"
                                            />
+                                           <div className="flex items-center justify-between mt-2 pt-0.5">
+                                             <div className="flex items-center gap-2">
+                                               {noteSaveStatus[mat.id] === 'saving' ? (
+                                                 <span className="text-[10px] text-amber-800 font-mono flex items-center gap-1 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
+                                                   Профайлд хадгалж байна...
+                                                 </span>
+                                               ) : noteSaveStatus[mat.id] === 'saved' ? (
+                                                 <span className="text-[10px] text-emerald-800 font-mono font-bold flex items-center gap-1 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                                   ✓ Хадгалагдсан
+                                                 </span>
+                                               ) : (materialNotes[mat.id] || '') !== (savedNotes[mat.id] || '') ? (
+                                                 <span className="text-[10px] text-amber-900 font-semibold italic flex items-center gap-1">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                                                   Хадгалаагүй өөрчлөлт байна
+                                                 </span>
+                                               ) : (savedNotes[mat.id]?.trim()) ? (
+                                                 <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
+                                                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                                   Профайлд хадгалагдсан
+                                                 </span>
+                                               ) : (
+                                                 <span className="text-[10px] text-amber-700/80 font-mono">
+                                                   ☁️ Бичээд "Хадгалах" товч дарна уу
+                                                 </span>
+                                               )}
+                                             </div>
+                                             <button
+                                               type="button"
+                                               onClick={() => handleSaveMaterialNote(mat.id)}
+                                               disabled={noteSaveStatus[mat.id] === 'saving'}
+                                               className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                             >
+                                               <Save size={13} />
+                                               <span>{noteSaveStatus[mat.id] === 'saving' ? 'Хадгалж байна...' : 'Хадгалах'}</span>
+                                             </button>
+                                           </div>
                                          </div>
 
                                        </div>
@@ -1581,18 +1628,51 @@ export default function DelegateDashboard({
                                   </button>
                                 </div>
                                 <textarea
-                                  value={noteText}
-                                  onChange={(e) => handleSaveMaterialNote(matId, e.target.value)}
+                                  value={materialNotes[matId] ?? noteText}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaterialNotes(prev => ({ ...prev, [matId]: val }));
+                                    if (noteSaveStatus[matId] === 'saved') {
+                                      setNoteSaveStatus(prev => ({ ...prev, [matId]: 'idle' }));
+                                    }
+                                  }}
                                   rows={2}
                                   className="w-full text-xs p-2 bg-amber-50/50 border border-amber-200 rounded-xl text-slate-800 outline-none focus:border-amber-400 resize-none font-sans"
                                   placeholder="Тэмдэглэл бичих..."
                                 />
-                                <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono pt-0.5">
-                                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
-                                    Профайлд хадгалагдсан
-                                  </span>
-                                  <span>Өөрчлөхөд автоматаар шинэчлэгдэнэ</span>
+                                <div className="flex items-center justify-between pt-1">
+                                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                                    {noteSaveStatus[matId] === 'saving' ? (
+                                      <span className="text-amber-800 font-semibold flex items-center gap-1">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
+                                        Хадгалж байна...
+                                      </span>
+                                    ) : noteSaveStatus[matId] === 'saved' ? (
+                                      <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                        ✓ Хадгалагдсан
+                                      </span>
+                                    ) : (materialNotes[matId] || '') !== (savedNotes[matId] || '') ? (
+                                      <span className="text-amber-800 font-semibold italic flex items-center gap-1">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                                        Хадгалаагүй өөрчлөлт байна
+                                      </span>
+                                    ) : (
+                                      <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                        Профайлд хадгалагдсан
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveMaterialNote(matId)}
+                                    disabled={noteSaveStatus[matId] === 'saving'}
+                                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-2xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                  >
+                                    <Save size={12} />
+                                    <span>Хадгалах</span>
+                                  </button>
                                 </div>
                               </div>
                             );
