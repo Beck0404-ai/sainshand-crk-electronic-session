@@ -101,39 +101,28 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
     return `${mins}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Helper to render vertical moving/rolling names block for each voting selection
-  const renderMarqueeLine = (list: Delegate[], badgeColorClass: string, bgClass: string, choiceName: string) => {
+  // Render clean, stable voter badges for each voting selection (гүйлгэхгүй, шууд тогтвортой харуулах)
+  const renderVotersList = (list: Delegate[], badgeColorClass: string, bgClass: string) => {
     if (list.length === 0) {
       return (
-        <div className="py-2.5 text-xs italic text-blue-300/40 bg-blue-950/40 px-3 rounded-lg border border-blue-900/30 text-center font-medium">
+        <div className="py-2 text-xs italic text-blue-300/40 bg-blue-950/30 px-3 rounded-lg border border-blue-900/30 text-center font-medium">
           Санал одоогоор өгөөгүй байна...
         </div>
       );
     }
 
-    // Repeat the voters' names list to make a seamless scrolling marquee
-    const repeatedList = [...list, ...list, ...list, ...list, ...list, ...list];
-
     return (
-      <div className="relative overflow-hidden h-28 w-full bg-blue-950/70 py-2 px-2 rounded-xl border border-blue-900/40 mt-1.5 shadow-inner">
-        {/* Soft fading top and bottom edges */}
-        <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-blue-950/90 to-transparent z-10 pointer-events-none"></div>
-        
-        <div className="animate-marquee-vertical space-y-1.5">
-          {repeatedList.map((v, idx) => (
-            <div 
-              key={`${v.id}-${idx}`} 
-              className={`flex items-center justify-between px-3 py-1.5 text-xs rounded-xl font-bold shadow-sm transition-colors ${badgeColorClass} ${bgClass}`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
-                <span>{v.fullName}</span>
-              </div>
-              <span className="text-[9px] opacity-75 font-mono">{v.district}</span>
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1 mt-1">
+        {list.map((v) => (
+          <span 
+            key={v.id} 
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-xl font-bold shadow-xs transition-colors ${badgeColorClass} ${bgClass}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
+            <span>{v.fullName}</span>
+            <span className="text-[9px] opacity-70 font-mono">({v.district})</span>
+          </span>
+        ))}
       </div>
     );
   };
@@ -383,9 +372,9 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                             <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{ width: `${yesPercent}%` }}></div>
                           </div>
 
-                          {/* Moving/Scrolling Names */}
+                          {/* Voters list */}
                           <div className="pt-1">
-                            {renderMarqueeLine(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20', text1)}
+                            {renderVotersList(yesVotesList, 'text-emerald-400', 'bg-emerald-500/10 border border-emerald-500/20')}
                           </div>
                         </div>
 
@@ -403,7 +392,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                           </div>
 
                           <div className="pt-1">
-                            {renderMarqueeLine(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20', text2)}
+                            {renderVotersList(noVotesList, 'text-rose-400', 'bg-rose-500/10 border border-rose-500/20')}
                           </div>
                         </div>
 
@@ -421,7 +410,7 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                           </div>
 
                           <div className="pt-1">
-                            {renderMarqueeLine(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20', text3)}
+                            {renderVotersList(abstainVotesList, 'text-amber-400', 'bg-amber-500/10 border border-amber-500/20')}
                           </div>
                         </div>
                       </div>
@@ -452,8 +441,8 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                     <AnimatePresence>
                       <motion.div
                         key={last.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         className="space-y-4"
                       >
                         {/* Result banner */}
@@ -572,10 +561,9 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
             
             <div className="space-y-3 flex flex-col h-full">
               <h3 className="text-blue-400 font-mono font-bold uppercase text-[10px] tracking-widest flex items-center justify-between border-b border-blue-900/40 pb-2">
-                <span className="flex items-center gap-1.5"><Users size={13} /> ТАНХИМЫН ИРЦ БҮРТГЭХ ТӨЛӨВ</span>
-                <span className="text-emerald-400 font-bold text-[8px] flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  ГҮЙЖ БАЙНА
+                <span className="flex items-center gap-1.5"><Users size={13} /> ТАНХИМЫН ИРЦ</span>
+                <span className="text-blue-300 font-mono text-[9px] font-bold">
+                  {presentCount}/{totalCount} ({attendancePercentage}%)
                 </span>
               </h3>
 
@@ -584,69 +572,63 @@ export default function ProjectorView({ meeting, delegates, onBackToAdmin }: Pro
                 <div className="text-[9px] text-blue-400 font-mono uppercase tracking-widest mt-0.5 font-bold">БҮРТГЭГДСЭН ИРЭЛТ ({attendancePercentage}%)</div>
               </div>
 
-              {/* VERTICAL SCROLLING TICKER OF ALL DELEGATES NAMES (Доороос дээш гүйдэг төлөөлөгчдийн нэрсийн жагсаалт) */}
+              {/* STABLE DELEGATES LIST (Тогтвортой, цэвэрхэн харагдах 29 төлөөлөгчийн жагсаалт) */}
               <div className="pt-1 flex-1 flex flex-col min-h-[360px]">
                 <div className="flex items-center justify-between text-[9px] text-blue-400 uppercase tracking-widest mb-1.5 font-mono font-bold">
-                  <span>📜 ТӨЛӨӨЛӨГЧДИЙН НЭРС (ДОРООС ДЭЭШ)</span>
+                  <span>📜 ТӨЛӨӨЛӨГЧДИЙН ЖАГСААЛТ</span>
                   <span>({delegates.length})</span>
                 </div>
 
-                <div className="relative flex-1 min-h-[340px] max-h-[460px] overflow-hidden rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner">
-                  {/* Soft top and bottom gradient fades */}
-                  <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0b162c] to-transparent z-10 pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0b162c] to-transparent z-10 pointer-events-none" />
+                <div className="relative flex-1 min-h-[340px] max-h-[500px] overflow-y-auto rounded-2xl bg-blue-950/70 border border-blue-900/60 p-2 shadow-inner space-y-1.5">
+                  {delegates.map((d, idx) => {
+                    const isPresent = meeting ? !!meeting.attendance[d.id] : false;
+                    const didVote = isVotingActive ? !!votes[d.id] : false;
+                    const seatNo = String(idx + 1).padStart(2, '0');
 
-                  <div className="animate-marquee-vertical space-y-2">
-                    {[...delegates, ...delegates, ...delegates].map((d, idx) => {
-                      const isPresent = meeting ? !!meeting.attendance[d.id] : false;
-                      const didVote = isVotingActive ? !!votes[d.id] : false;
-                      const seatNo = String((idx % delegates.length) + 1).padStart(2, '0');
+                    let voteBadgeText = null;
+                    if (isVotingActive && didVote) {
+                      const choice = votes[d.id]?.choice;
+                      if (choice === 'Зөвшөөрсөн' || choice === 'Батлах') voteBadgeText = '👍 Зөвшөөрсөн';
+                      else if (choice === 'Татгалзсан' || choice === 'Татгалзах') voteBadgeText = '👎 Татгалзсан';
+                      else if (choice === 'Түтгэлзсэн' || choice === 'Санал гаргах') voteBadgeText = '✋ Түтгэлзсэн';
+                    }
 
-                      let voteBadgeText = null;
-                      if (isVotingActive && didVote) {
-                        const choice = votes[d.id]?.choice;
-                        if (choice === 'Зөвшөөрсөн' || choice === 'Батлах') voteBadgeText = '👍 Зөвшөөрсөн';
-                        else if (choice === 'Татгалзсан' || choice === 'Татгалзах') voteBadgeText = '👎 Татгалзсан';
-                        else if (choice === 'Түтгэлзсэн' || choice === 'Санал гаргах') voteBadgeText = '✋ Түтгэлзсэн';
-                      }
-
-                      return (
-                        <div
-                          key={`${d.id}-${idx}`}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between border transition-all duration-300 ${
-                            isPresent
-                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm'
-                              : 'bg-blue-950/40 border-blue-900/30 text-slate-400 opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className={`h-5 w-5 rounded-md font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0 ${
-                              isPresent ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-blue-950 text-slate-500 border border-blue-900/40'
-                            }`}>
-                              {seatNo}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="font-bold truncate text-xs leading-snug">{d.fullName}</p>
-                              <p className="text-[9px] font-mono opacity-70 truncate">{d.party} • {d.district}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                              isPresent
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                : 'bg-blue-950 text-slate-400 border-blue-900/40'
-                            }`}>
-                              {isPresent ? 'Ирсэн' : 'Ирээгүй'}
-                            </span>
-                            {voteBadgeText && (
-                              <span className="text-[8px] font-mono text-amber-300 font-bold">{voteBadgeText}</span>
-                            )}
+                    return (
+                      <div
+                        key={d.id}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between border transition-all duration-300 ${
+                          isPresent
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm'
+                            : 'bg-blue-950/40 border-blue-900/30 text-slate-400 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`h-5 w-5 rounded-md font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0 ${
+                            isPresent ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-blue-950 text-slate-500 border border-blue-900/40'
+                          }`}>
+                            {seatNo}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-bold truncate text-xs leading-snug">{d.fullName}</p>
+                            <p className="text-[9px] font-mono opacity-70 truncate">{d.party} • {d.district}</p>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                            isPresent
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                              : 'bg-blue-950 text-slate-400 border-blue-900/40'
+                          }`}>
+                            {isPresent ? 'Ирсэн' : 'Ирээгүй'}
+                          </span>
+                          {voteBadgeText && (
+                            <span className="text-[8px] font-mono text-amber-300 font-bold">{voteBadgeText}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
